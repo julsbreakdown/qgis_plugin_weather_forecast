@@ -7,6 +7,8 @@ covering your bbox. Plain library (no QGIS, no global state, thread safe) plus a
 
 ![Animated wind flow lines in QGIS](assets/qgis_wind_flow.gif)
 
+![ICON-EU total cloud cover over France in QGIS, clear sky transparent](assets/qgis_cloud_cover.jpg)
+
 ## Supported data
 
 Read from `https://stac.dynamical.org/catalog.json` at run time; `list_models()` is the authority.
