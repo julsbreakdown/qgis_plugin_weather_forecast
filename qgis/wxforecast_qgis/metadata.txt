@@ -1,0 +1,15 @@
+[general]
+name=Weather Forecast
+qgisMinimumVersion=3.40
+qgisMaximumVersion=4.99
+supportsQt6=True
+description=Display a weather forecast map from dynamical.org
+version=0.1.0
+author=Julien Waddle
+email=julien.waddle@camptocamp.com
+about=Fetches one forecast map (model, variable, lead time, current extent) from the dynamical.org Icechunk repositories through the wxforecast library and adds it as a styled raster layer. Requires the wxforecast library and its dependencies (icechunk, zarr), see README.
+tags=weather,forecast,gfs,ecmwf,icechunk,zarr
+category=Raster
+icon=icons/forecast.svg
+experimental=True
+hasProcessingProvider=yes
