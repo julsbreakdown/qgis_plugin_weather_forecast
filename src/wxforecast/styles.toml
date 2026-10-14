@@ -1,0 +1,167 @@
+# Style per variable kind; format in README.md "Styles". The first kind whose names or units match wins.
+
+[rain_flag]
+title = "Rain (yes/no)"
+icon = "rain"
+names = ["categorical_rain*"]
+range = [0, 1]
+discrete = true
+stops = [[0, "#2171b5", 0, "no"], [1, "#2171b5", 210, "rain"]]
+
+[snow_flag]
+title = "Snow (yes/no)"
+icon = "snow"
+names = ["categorical_snow*"]
+range = [0, 1]
+discrete = true
+stops = [[0, "#d4d8f0", 0, "no"], [1, "#d4d8f0", 210, "snow"]]
+
+[freezing_rain_flag]
+title = "Freezing rain (yes/no)"
+icon = "rain"
+names = ["categorical_freezing_rain*"]
+range = [0, 1]
+discrete = true
+stops = [[0, "#e7298a", 0, "no"], [1, "#e7298a", 210, "freezing rain"]]
+
+[ice_pellets_flag]
+title = "Ice pellets (yes/no)"
+icon = "snow"
+names = ["categorical_ice_pellets*"]
+range = [0, 1]
+discrete = true
+stops = [[0, "#fd8d3c", 0, "no"], [1, "#fd8d3c", 210, "ice pellets"]]
+
+[wind_component]
+title = "Wind component"
+icon = "components"
+names = ["wind_u_*", "wind_v_*"]
+anchor = "symmetric"
+colors = ["#762a83", "#af8dc3", "#e7d4e8", "#f7f7f7", "#d9f0d3", "#7fbf7b", "#1b7837"]
+
+[wind]
+title = "Wind speed"
+icon = "wind"
+names = ["wind_*"]
+anchor = "zero"
+colors = ["#f7fcfd", "#bfd3e6", "#8c96c6", "#8c6bb1", "#88419d", "#6e016b"]
+
+[cloud_ceiling]
+title = "Cloud ceiling"
+icon = "cloud"
+names = ["*cloud_ceiling*"]
+range = [0, 8000]
+valid_max = 19000
+stops = [[0, "#4d4d4d", 235], [0.25, "#8c8c8c", 215], [0.6, "#c8c8c8", 170], [1, "#f0f0f0", 90]]
+
+[cloud]
+title = "Cloud cover"
+icon = "cloud"
+names = ["*cloud_cover*"]
+range = [0, 100]
+stops = [
+    [0, "#9a9a9a", 0],
+    [0.1, "#a6a6a6", 60],
+    [0.5, "#cfcfcf", 160],
+    [0.8, "#ececec", 210],
+    [1, "#ffffff", 235],
+]
+
+[frozen_fraction]
+title = "Frozen precipitation"
+icon = "snow"
+names = ["*percent_frozen*"]
+range = [0, 100]
+valid_min = -0.1
+stops = [[0, "#c6dbef", 0], [0.1, "#c6dbef", 160], [0.5, "#9e9ac8", 230], [1, "#54278f"]]
+
+[temperature]
+title = "Temperature"
+icon = "thermometer"
+names = ["*temperature*"]
+units = ["K", "degC", "C", "°C", "degree_Celsius", "degF"]
+colors = ["#2166ac", "#67a9cf", "#d1e5f0", "#f7f7f7", "#fddbc7", "#ef8a62", "#b2182b"]
+
+[precipitable_water]
+title = "Precipitable water"
+icon = "humidity"
+names = ["*precipitable_water*"]
+anchor = "zero"
+colors = ["#ffffd9", "#c7e9b4", "#7fcdbb", "#41b6c4", "#1d91c0", "#225ea8", "#0c2c84"]
+
+[precipitation]
+title = "Precipitation"
+icon = "rain"
+names = ["*precipitation*"]
+anchor = "zero"
+stops = [
+    [0, "#deebf7", 0],
+    [0.03, "#c6dbef", 200],
+    [0.12, "#9ecae1"],
+    [0.3, "#6baed6"],
+    [0.55, "#3182bd"],
+    [0.8, "#08519c"],
+    [1, "#08306b"],
+]
+
+[snow]
+title = "Snow"
+icon = "snow"
+names = ["*snow*"]
+anchor = "zero"
+stops = [[0, "#ffffff", 0], [0.05, "#eef3fb", 200], [0.3, "#c6dbef"], [0.6, "#9e9ac8"], [1, "#54278f"]]
+
+[humidity]
+title = "Relative humidity"
+icon = "humidity"
+names = ["*humidity*"]
+range = [0, 100]
+colors = ["#8c510a", "#d8b365", "#f6e8c3", "#c7eae5", "#5ab4ac", "#01665e"]
+
+[pressure]
+title = "Pressure"
+icon = "pressure"
+names = ["*pressure*"]
+units = ["Pa", "hPa"]
+colors = ["#542788", "#998ec3", "#d8daeb", "#f7f7f7", "#fee0b6", "#f1a340", "#b35806"]
+
+[radiation]
+title = "Radiation flux"
+icon = "radiation"
+names = ["*radiation*"]
+units = ["W m-2"]
+colors = ["#000004", "#420a68", "#932667", "#dd513a", "#fca50a", "#fcffa4"]
+
+[cape]
+title = "Convective available potential energy"
+icon = "cape"
+names = ["*convective_available_potential_energy*"]
+units = ["J kg-1"]
+range = [0, 3000]
+stops = [
+    [0, "#ffffb2", 0],
+    [0.05, "#fed976", 200],
+    [0.2, "#feb24c"],
+    [0.4, "#fd8d3c"],
+    [0.6, "#f03b20"],
+    [0.8, "#bd0026"],
+    [1, "#7a0177"],
+]
+
+[height]
+title = "Geopotential height"
+icon = "height"
+names = ["*geopotential*", "*height*"]
+colors = ["#00441b", "#238b45", "#66c2a4", "#ccece6", "#f7fcfd"]
+
+# Wind flow lines in QGIS, graduated by speed from 0 to the layer max; matches no variable.
+[flow]
+title = "Wind flow speed"
+icon = "wind"
+colors = ["#7fdbff", "#ffe066", "#ff4136"]
+
+# Fallback for any variable no kind matches; must exist.
+[other]
+title = "Other"
+icon = "generic"
+colors = ["#00224e", "#434e6c", "#7d7c78", "#bcaf6f", "#fee838"]
