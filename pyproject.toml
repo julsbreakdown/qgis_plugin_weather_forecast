@@ -1,0 +1,32 @@
+[project]
+name = "wxforecast"
+version = "0.1.0"
+description = "Fetch weather forecast maps from dynamical.org Icechunk stores, for QGIS and Python DAGs"
+requires-python = ">=3.12"
+dependencies = [
+    "icechunk>=2.3",
+    "numpy>=2.0",
+    "pmtiles>=3.8.1",
+    "zarr>=3.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4",
+    "ruff>=0.13",
+]
+
+[build-system]
+requires = ["uv_build>=0.8,<0.12"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["network: reads dynamical.org over the network (deselect with -m 'not network')"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
