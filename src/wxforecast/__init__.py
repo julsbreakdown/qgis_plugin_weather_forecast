@@ -3,6 +3,7 @@
 from wxforecast.catalog import list_models, model
 from wxforecast.geotiff import to_geotiff
 from wxforecast.reader import Forecast, fetch, fetch_range, step_name
+from wxforecast.sld import to_sld
 from wxforecast.tiles import (
     Cancelled,
     areas_bbox,
@@ -31,4 +32,5 @@ __all__ = [
     "to_geotiff",
     "to_pmtiles",
     "to_pmtiles_steps",
+    "to_sld",
 ]
