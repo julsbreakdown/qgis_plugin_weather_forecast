@@ -1,0 +1,85 @@
+{
+  "type": "Collection",
+  "id": "noaa-hrrr-forecast-48-hour",
+  "stac_version": "1.1.0",
+  "title": "NOAA HRRR forecast, 48 hour",
+  "cube:dimensions": {
+    "init_time": {
+      "type": "temporal",
+      "extent": [
+        "2018-07-13T12:00:00Z",
+        null
+      ],
+      "unit": "seconds since 1970-01-01"
+    },
+    "lead_time": {
+      "type": "other",
+      "extent": [
+        0,
+        172800
+      ],
+      "unit": "seconds",
+      "size": 49
+    },
+    "x": {
+      "type": "spatial",
+      "extent": [
+        -2697520.142521929,
+        2696479.857478071
+      ],
+      "axis": "x",
+      "unit": "m",
+      "size": 1799
+    },
+    "y": {
+      "type": "spatial",
+      "extent": [
+        -1587306.152556665,
+        1586693.847443335
+      ],
+      "axis": "y",
+      "unit": "m",
+      "size": 1059
+    }
+  },
+  "cube:variables": {
+    "temperature_2m": {
+      "dimensions": [
+        "init_time",
+        "lead_time",
+        "y",
+        "x"
+      ],
+      "type": "data",
+      "chunks": [
+        1,
+        49,
+        265,
+        300
+      ],
+      "shards": [
+        1,
+        49,
+        1060,
+        1800
+      ],
+      "unit": "degree_Celsius",
+      "long_name": "2 metre temperature",
+      "standard_name": "air_temperature",
+      "short_name": "2t"
+    }
+  },
+  "assets": {
+    "icechunk-https": {
+      "href": "https://dynamical-noaa-hrrr.s3.us-west-2.amazonaws.com/noaa-hrrr-forecast-48-hour/v0.1.0.icechunk",
+      "type": "application/x-icechunk",
+      "title": "Icechunk v2 repository (HTTPS)",
+      "xarray:open_kwargs": {
+        "engine": "zarr"
+      },
+      "roles": [
+        "data"
+      ]
+    }
+  }
+}

@@ -1,0 +1,165 @@
+{
+  "type": "Collection",
+  "id": "ecmwf-ifs-ens-forecast-46-day-daily-1-5-degree",
+  "stac_version": "1.1.0",
+  "title": "ECMWF IFS ENS forecast, 46 day, daily, 1.5 degree",
+  "cube:dimensions": {
+    "ensemble_member": {
+      "type": "other",
+      "extent": [
+        0,
+        100
+      ],
+      "unit": "1",
+      "size": 101
+    },
+    "init_time": {
+      "type": "temporal",
+      "extent": [
+        "2026-01-01T00:00:00Z",
+        null
+      ],
+      "unit": "seconds since 1970-01-01"
+    },
+    "latitude": {
+      "type": "spatial",
+      "extent": [
+        -90.0,
+        90.0
+      ],
+      "axis": "y",
+      "unit": "degree_north",
+      "size": 121
+    },
+    "lead_time": {
+      "type": "other",
+      "extent": [
+        0,
+        3974400
+      ],
+      "unit": "seconds",
+      "size": 47
+    },
+    "longitude": {
+      "type": "spatial",
+      "extent": [
+        -180.0,
+        178.5
+      ],
+      "axis": "x",
+      "unit": "degree_east",
+      "size": 240
+    },
+    "pressure_level": {
+      "type": "other",
+      "extent": [
+        10,
+        1000
+      ],
+      "unit": "hPa",
+      "size": 10
+    }
+  },
+  "cube:variables": {
+    "average_temperature_2m": {
+      "dimensions": [
+        "init_time",
+        "lead_time",
+        "ensemble_member",
+        "latitude",
+        "longitude"
+      ],
+      "type": "data",
+      "chunks": [
+        1,
+        47,
+        101,
+        25,
+        24
+      ],
+      "shards": [
+        1,
+        47,
+        101,
+        125,
+        240
+      ],
+      "unit": "degree_Celsius",
+      "long_name": "Mean temperature at 2 metres in the last 24 hours",
+      "standard_name": "air_temperature",
+      "short_name": "mean2t24"
+    },
+    "precipitation_surface": {
+      "dimensions": [
+        "init_time",
+        "lead_time",
+        "ensemble_member",
+        "latitude",
+        "longitude"
+      ],
+      "type": "data",
+      "chunks": [
+        1,
+        47,
+        101,
+        25,
+        24
+      ],
+      "shards": [
+        1,
+        47,
+        101,
+        125,
+        240
+      ],
+      "unit": "kg m-2 s-1",
+      "long_name": "Precipitation rate",
+      "standard_name": "precipitation_flux",
+      "short_name": "prate"
+    },
+    "pressure_level/temperature": {
+      "dimensions": [
+        "init_time",
+        "lead_time",
+        "ensemble_member",
+        "pressure_level",
+        "latitude",
+        "longitude"
+      ],
+      "type": "data",
+      "chunks": [
+        1,
+        47,
+        101,
+        1,
+        25,
+        24
+      ],
+      "shards": [
+        1,
+        47,
+        101,
+        1,
+        125,
+        240
+      ],
+      "unit": "degree_Celsius",
+      "long_name": "Temperature",
+      "standard_name": "air_temperature",
+      "short_name": "t"
+    }
+  },
+  "assets": {
+    "icechunk-https": {
+      "href": "https://dynamical-ecmwf-ifs-ens.s3.us-west-2.amazonaws.com/ecmwf-ifs-ens-forecast-46-day-daily-1-5-degree/v0.2.0.icechunk",
+      "type": "application/x-icechunk",
+      "title": "Icechunk v2 repository (HTTPS)",
+      "xarray:open_kwargs": {
+        "engine": "zarr"
+      },
+      "roles": [
+        "data"
+      ]
+    }
+  }
+}

@@ -1,0 +1,125 @@
+{
+  "type": "Collection",
+  "id": "noaa-gefs-forecast-35-day",
+  "stac_version": "1.1.0",
+  "title": "NOAA GEFS forecast, 35 day",
+  "cube:dimensions": {
+    "ensemble_member": {
+      "type": "other",
+      "extent": [
+        0,
+        30
+      ],
+      "unit": "1",
+      "size": 31
+    },
+    "init_time": {
+      "type": "temporal",
+      "extent": [
+        "2020-10-01T00:00:00Z",
+        null
+      ],
+      "unit": "seconds since 1970-01-01"
+    },
+    "latitude": {
+      "type": "spatial",
+      "extent": [
+        -90.0,
+        90.0
+      ],
+      "axis": "y",
+      "unit": "degree_north",
+      "size": 721
+    },
+    "lead_time": {
+      "type": "other",
+      "extent": [
+        0,
+        3024000
+      ],
+      "unit": "seconds",
+      "size": 181
+    },
+    "longitude": {
+      "type": "spatial",
+      "extent": [
+        -180.0,
+        179.75
+      ],
+      "axis": "x",
+      "unit": "degree_east",
+      "size": 1440
+    }
+  },
+  "cube:variables": {
+    "temperature_2m": {
+      "dimensions": [
+        "init_time",
+        "ensemble_member",
+        "lead_time",
+        "latitude",
+        "longitude"
+      ],
+      "type": "data",
+      "chunks": [
+        1,
+        31,
+        64,
+        17,
+        16
+      ],
+      "shards": [
+        1,
+        31,
+        192,
+        374,
+        368
+      ],
+      "unit": "degree_Celsius",
+      "long_name": "2 metre temperature",
+      "standard_name": "air_temperature",
+      "short_name": "2t"
+    },
+    "wind_u_10m": {
+      "dimensions": [
+        "init_time",
+        "ensemble_member",
+        "lead_time",
+        "latitude",
+        "longitude"
+      ],
+      "type": "data",
+      "chunks": [
+        1,
+        31,
+        64,
+        17,
+        16
+      ],
+      "shards": [
+        1,
+        31,
+        192,
+        374,
+        368
+      ],
+      "unit": "m s-1",
+      "long_name": "10 metre U wind component",
+      "standard_name": "eastward_wind",
+      "short_name": "10u"
+    }
+  },
+  "assets": {
+    "icechunk-https": {
+      "href": "https://dynamical-noaa-gefs.s3.us-west-2.amazonaws.com/noaa-gefs-forecast-35-day/v0.2.0.icechunk",
+      "type": "application/x-icechunk",
+      "title": "Icechunk v2 repository (HTTPS)",
+      "xarray:open_kwargs": {
+        "engine": "zarr"
+      },
+      "roles": [
+        "data"
+      ]
+    }
+  }
+}

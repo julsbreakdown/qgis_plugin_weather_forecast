@@ -1,0 +1,210 @@
+{
+  "type": "Collection",
+  "id": "noaa-gfs-forecast",
+  "stac_version": "1.1.0",
+  "title": "NOAA GFS forecast",
+  "cube:dimensions": {
+    "init_time": {
+      "type": "temporal",
+      "extent": [
+        "2021-05-01T00:00:00Z",
+        null
+      ],
+      "unit": "seconds since 1970-01-01"
+    },
+    "latitude": {
+      "type": "spatial",
+      "extent": [
+        -90.0,
+        90.0
+      ],
+      "axis": "y",
+      "unit": "degree_north",
+      "size": 721
+    },
+    "lead_time": {
+      "type": "other",
+      "extent": [
+        0,
+        1382400
+      ],
+      "unit": "seconds",
+      "size": 209
+    },
+    "longitude": {
+      "type": "spatial",
+      "extent": [
+        -180.0,
+        179.75
+      ],
+      "axis": "x",
+      "unit": "degree_east",
+      "size": 1440
+    }
+  },
+  "cube:variables": {
+    "temperature_2m": {
+      "dimensions": [
+        "init_time",
+        "lead_time",
+        "latitude",
+        "longitude"
+      ],
+      "type": "data",
+      "chunks": [
+        1,
+        105,
+        121,
+        121
+      ],
+      "shards": [
+        1,
+        210,
+        726,
+        726
+      ],
+      "unit": "degree_Celsius",
+      "long_name": "2 metre temperature",
+      "standard_name": "air_temperature",
+      "short_name": "2t"
+    },
+    "wind_u_10m": {
+      "dimensions": [
+        "init_time",
+        "lead_time",
+        "latitude",
+        "longitude"
+      ],
+      "type": "data",
+      "chunks": [
+        1,
+        105,
+        121,
+        121
+      ],
+      "shards": [
+        1,
+        210,
+        726,
+        726
+      ],
+      "unit": "m s-1",
+      "long_name": "10 metre U wind component",
+      "standard_name": "eastward_wind",
+      "short_name": "10u"
+    },
+    "wind_v_10m": {
+      "dimensions": [
+        "init_time",
+        "lead_time",
+        "latitude",
+        "longitude"
+      ],
+      "type": "data",
+      "chunks": [
+        1,
+        105,
+        121,
+        121
+      ],
+      "shards": [
+        1,
+        210,
+        726,
+        726
+      ],
+      "unit": "m s-1",
+      "long_name": "10 metre V wind component",
+      "standard_name": "northward_wind",
+      "short_name": "10v"
+    },
+    "precipitation_surface": {
+      "dimensions": [
+        "init_time",
+        "lead_time",
+        "latitude",
+        "longitude"
+      ],
+      "type": "data",
+      "chunks": [
+        1,
+        105,
+        121,
+        121
+      ],
+      "shards": [
+        1,
+        210,
+        726,
+        726
+      ],
+      "unit": "kg m-2 s-1",
+      "long_name": "Precipitation rate",
+      "standard_name": "precipitation_flux",
+      "short_name": "prate"
+    },
+    "pressure_reduced_to_mean_sea_level": {
+      "dimensions": [
+        "init_time",
+        "lead_time",
+        "latitude",
+        "longitude"
+      ],
+      "type": "data",
+      "chunks": [
+        1,
+        105,
+        121,
+        121
+      ],
+      "shards": [
+        1,
+        210,
+        726,
+        726
+      ],
+      "unit": "Pa",
+      "long_name": "Pressure reduced to MSL",
+      "standard_name": "air_pressure_at_mean_sea_level",
+      "short_name": "prmsl"
+    },
+    "total_cloud_cover_atmosphere": {
+      "dimensions": [
+        "init_time",
+        "lead_time",
+        "latitude",
+        "longitude"
+      ],
+      "type": "data",
+      "chunks": [
+        1,
+        105,
+        121,
+        121
+      ],
+      "shards": [
+        1,
+        210,
+        726,
+        726
+      ],
+      "unit": "percent",
+      "long_name": "Total cloud cover",
+      "standard_name": "cloud_area_fraction",
+      "short_name": "tcc"
+    }
+  },
+  "assets": {
+    "icechunk-https": {
+      "href": "https://dynamical-noaa-gfs.s3.us-west-2.amazonaws.com/noaa-gfs-forecast/v0.2.7.icechunk",
+      "type": "application/x-icechunk",
+      "title": "Icechunk v2 repository (HTTPS)",
+      "xarray:open_kwargs": {
+        "engine": "zarr"
+      },
+      "roles": [
+        "data"
+      ]
+    }
+  }
+}
