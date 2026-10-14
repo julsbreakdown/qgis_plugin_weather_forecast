@@ -1,5 +1,6 @@
 from qgis.core import (
     Qgis,
+    QgsBilinearRasterResampler,
     QgsClassificationEqualInterval,
     QgsColorRampShader,
     QgsGradientColorRamp,
@@ -7,7 +8,6 @@ from qgis.core import (
     QgsGraduatedSymbolRenderer,
     QgsLineSymbol,
     QgsProperty,
-    QgsRasterDataProvider,
     QgsRasterLayer,
     QgsRasterRange,
     QgsRasterShader,
@@ -104,8 +104,8 @@ def apply_style(layer: QgsRasterLayer, variable: str, unit: str) -> str:
     renderer.setClassificationMax(high)
     layer.setRenderer(renderer)
     if not style.discrete and style.valid == (None, None):
-        provider.enableProviderResampling(True)
-        provider.setZoomedInResamplingMethod(QgsRasterDataProvider.ResamplingMethod.Bilinear)
+        # Provider bilinear resampling still drew coarse grids as squares (QGIS 4.2).
+        layer.resampleFilter().setZoomedInResampler(QgsBilinearRasterResampler())
     layer.triggerRepaint()
     return kind
 
