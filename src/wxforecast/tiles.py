@@ -90,6 +90,16 @@ def native_zoom(geotransform: tuple[float, ...]) -> int:
     return min(zoom, MAX_ZOOM)
 
 
+def estimate_tiles(areas: list[str], min_zoom: int = 0, max_zoom: int = MAX_ZOOM) -> int:
+    """At most how many tiles `to_pmtiles` would draw over the areas (from their envelopes), without a
+    forecast; ValueError on bad zooms or areas."""
+    from osgeo import ogr
+
+    _check_zooms(min_zoom, max_zoom)
+    with ogr.ExceptionMgr(useExceptions=True):
+        return _estimate(_shape(areas), min_zoom, max_zoom)
+
+
 def to_pmtiles(
     forecast: Forecast,
     path: str | Path,
@@ -111,13 +121,10 @@ def to_pmtiles(
     """
     from osgeo import gdal, ogr, osr
 
-    if not areas:
-        raise ValueError("at least one area is needed")
     if max_zoom is None:
         max_zoom = max(native_zoom(forecast.geotransform), min_zoom)
         logger.info("max zoom %d from the %s grid", max_zoom, forecast.model)
-    if not 0 <= min_zoom <= max_zoom <= MAX_ZOOM:
-        raise ValueError(f"zoom levels must satisfy 0 <= min <= max <= {MAX_ZOOM}")
+    _check_zooms(min_zoom, max_zoom)
     kind = colors.variable_kind(forecast.variable, forecast.unit, styles)
     vmin, vmax = _limits(forecast.values, kind, vmin, vmax, styles)
     zooms = range(min_zoom, max_zoom + 1)
@@ -128,12 +135,10 @@ def to_pmtiles(
         ogr.ExceptionMgr(useExceptions=True),
         osr.ExceptionMgr(useExceptions=True),
     ):
-        shape = _multipolygon([_union(areas).Intersection(ogr.CreateGeometryFromWkt(bbox_wkt(WORLD)))])
-        if shape.IsEmpty():
-            raise ValueError(f"the areas are outside the Web Mercator latitudes (+-{MERCATOR_LAT:.2f})")
+        shape = _shape(areas)
         bounds = shape.GetEnvelope()
         parts = [part.GetEnvelope() for part in _polygons(shape)]
-        estimate = sum(min(_count(z, bounds), sum(_count(z, p) for p in parts)) for z in zooms)
+        estimate = _estimate(shape, min_zoom, max_zoom)
         if estimate > MAX_TILES:
             raise ValueError(f"about {estimate} tiles exceed the limit of {MAX_TILES}, lower the max zoom")
         shape.Transform(osr.CoordinateTransformation(srs("EPSG:4326"), srs("EPSG:3857")))
@@ -211,6 +216,31 @@ def to_pmtiles_steps(
     with atomic(folder / "index.json") as tmp:
         tmp.write_text(json.dumps(index, indent=2))
     return folder / "index.json"
+
+
+def _check_zooms(min_zoom: int, max_zoom: int) -> None:
+    if not 0 <= min_zoom <= max_zoom <= MAX_ZOOM:
+        raise ValueError(f"zoom levels must satisfy 0 <= min <= max <= {MAX_ZOOM}")
+
+
+def _shape(areas: list[str]) -> ogr.Geometry:
+    """Union of the areas inside the Web Mercator latitudes, still in EPSG:4326."""
+    from osgeo import ogr
+
+    if not areas:
+        raise ValueError("at least one area is needed")
+    shape = _multipolygon([_union(areas).Intersection(ogr.CreateGeometryFromWkt(bbox_wkt(WORLD)))])
+    if shape.IsEmpty():
+        raise ValueError(f"the areas are outside the Web Mercator latitudes (+-{MERCATOR_LAT:.2f})")
+    return shape
+
+
+def _estimate(shape: ogr.Geometry, min_zoom: int, max_zoom: int) -> int:
+    bounds = shape.GetEnvelope()
+    parts = [part.GetEnvelope() for part in _polygons(shape)]
+    return sum(
+        min(_count(z, bounds), sum(_count(z, p) for p in parts)) for z in range(min_zoom, max_zoom + 1)
+    )
 
 
 def _limits(values: np.ndarray, kind: str, vmin, vmax, styles) -> tuple[float, float]:

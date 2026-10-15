@@ -145,6 +145,18 @@ def test_many_small_polygons_are_merged_once(tmp_path, forecast):
     assert _tiles(path)[2]
 
 
+def test_estimate_tiles_needs_no_forecast():
+    assert tiles.estimate_tiles([bbox_wkt(tiles.WORLD)], 0, 5) == 1365
+    assert tiles.estimate_tiles([bbox_wkt((-5, 41, 10, 51))], 0, 12) == 37874
+    assert tiles.estimate_tiles([bbox_wkt((0, 40, 10, 50))], 3, 3) == 2
+    with pytest.raises(ValueError, match="zoom"):
+        tiles.estimate_tiles([bbox_wkt((0, 40, 1, 41))], 3, 2)
+    with pytest.raises(ValueError, match="zoom"):
+        tiles.estimate_tiles([bbox_wkt((0, 40, 1, 41))], 0, tiles.MAX_ZOOM + 1)
+    with pytest.raises(ValueError, match="at least one area"):
+        tiles.estimate_tiles([])
+
+
 def test_tile_limit_is_checked_before_planning(tmp_path, forecast, monkeypatch):
     monkeypatch.setattr(tiles, "_candidates", lambda *_: pytest.fail("tiles enumerated"))
 
