@@ -36,6 +36,12 @@ class Forecast:
     direction: np.ndarray | None = None
 
 
+def step_ends(starts: list[datetime]) -> list[datetime]:
+    """Each step lasts until the next one; the last lasts as long as the one before it (1 h if alone)."""
+    last = starts[-1] - starts[-2] if len(starts) > 1 else timedelta(hours=1)
+    return [*starts[1:], starts[-1] + last]
+
+
 def step_name(forecast: Forecast) -> str:
     """`<variable>_<YYYYMMDDTHH>` of the valid time (UTC): a stable file stem per step."""
     return f"{forecast.variable}_{forecast.valid_time.astimezone(UTC):%Y%m%dT%H}"

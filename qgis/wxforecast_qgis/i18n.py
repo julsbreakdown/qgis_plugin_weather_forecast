@@ -37,6 +37,15 @@ FRENCH = {
     "Variable": "Variable",
     "Map time": "Heure de la carte",
     "Time": "Temps",
+    "Animated wind": "Vent animé",
+    "Wind only: the flow line dashes move downwind. The layer is redrawn continuously, which "
+    "may be slow on large extents or long time ranges.": (
+        "Vent seulement : les tirets des lignes de flux avancent dans le sens du vent. La couche est "
+        "redessinée en continu, ce qui peut être lent sur une grande emprise ou une longue plage horaire."
+    ),
+    "Animated wind flow lines (moving dashes, redrawn continuously: may be slow)": (
+        "Lignes de flux du vent animées (tirets mobiles, redessinées en continu : peut être lent)"
+    ),
     "Single time": "Heure unique",
     "Time range": "Plage horaire",
     "Duration": "Durée",

@@ -190,6 +190,15 @@ def test_flow_lines_of_several_steps_carry_their_valid_time(tmp_path):
     with ogr.ExceptionMgr(useExceptions=True):
         data = ogr.Open(str(path))
         layer = data.GetLayerByName("flow")
-        times = {tuple(feature.GetFieldAsDateTime("valid_time")) for feature in layer}
-    assert times == {(2026, 10, 12, 3, 0, 0.0, 100), (2026, 10, 12, 6, 0, 0.0, 100)}
+        rows = {
+            tuple(feature.GetFieldAsString(name) for name in ("valid_time", "show_from", "show_until"))
+            for feature in layer
+        }
+        indexes = data.ExecuteSQL("SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'flow'")
+        names = {feature.GetField(0) for feature in indexes}
+    assert rows == {
+        ("2026/10/12 03:00:00+00", "2026/10/12 03:00:01", "2026/10/12 06:00:00"),
+        ("2026/10/12 06:00:00+00", "2026/10/12 06:00:01", "2026/10/12 09:00:00"),
+    }, "each step lasts until the next, the last as long as the one before; show_from is 1 s late"
+    assert "flow_show" in names
     assert layer.GetFeatureCount() == 2 * len(wind.flow_lines(forecasts[0]))

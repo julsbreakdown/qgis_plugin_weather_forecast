@@ -132,7 +132,8 @@ PropertyCollectors=TimestampFileNameExtractorSPI[timeregex](time)
 regex=[0-9]{8}T[0-9]{2},format=yyyyMMdd'T'HH
 ```
 
-Flow lines of several steps carry a `valid_time` field for a vector time dimension.
+Flow lines of several steps carry a `valid_time` field (UTC) for a vector time dimension; `show_from` and
+`show_until` are the indexed step span QGIS filters on.
 
 ## Tests
 

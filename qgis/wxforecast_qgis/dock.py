@@ -16,6 +16,7 @@ from qgis.gui import QgsDockWidget, QgsExtentWidget, QgsFileWidget
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QFormLayout,
     QGroupBox,
@@ -55,6 +56,14 @@ class ForecastDock(QgsDockWidget):
 
         self.model_combo = QComboBox()
         self.variable_combo = QComboBox()
+        self.animate_flow_check = QCheckBox(tr("Animated wind"))
+        self.animate_flow_check.setChecked(True)
+        self.animate_flow_check.setToolTip(
+            tr(
+                "Wind only: the flow line dashes move downwind. The layer is redrawn continuously, which "
+                "may be slow on large extents or long time ranges."
+            )
+        )
         self.lead_spin = QSpinBox()
         self.lead_spin.setRange(-1, MAX_LEAD_HOURS)
         self.lead_spin.setSpecialValueText(tr("now"))
@@ -112,9 +121,10 @@ class ForecastDock(QgsDockWidget):
         styles_row.addWidget(self.styles_widget)
         styles_row.addWidget(self.styles_button)
 
-        form = QFormLayout()
+        self.form = form = QFormLayout()
         form.addRow(tr("Model"), self.model_combo)
         form.addRow(tr("Variable"), self.variable_combo)
+        form.addRow("", self.animate_flow_check)
         form.addRow(tr("Time"), self.time_combo)
         self.single_box = QGroupBox(tr("Single time"))
         single_form = QFormLayout(self.single_box)
@@ -140,6 +150,7 @@ class ForecastDock(QgsDockWidget):
         self.setWidget(body)
 
         self.model_combo.currentIndexChanged.connect(self._fill_variables)
+        self.variable_combo.currentIndexChanged.connect(self._sync_flow_option)
         self.fetch_button.clicked.connect(self._fetch)
         self.time_combo.currentIndexChanged.connect(self._sync_time_mode)
         self.days_spin.valueChanged.connect(self._sync_days_suffix)
@@ -158,6 +169,7 @@ class ForecastDock(QgsDockWidget):
         widgets = (
             self.model_combo,
             self.variable_combo,
+            self.animate_flow_check,
             self.lead_spin,
             self.time_combo,
             self.days_spin,
@@ -235,6 +247,16 @@ class ForecastDock(QgsDockWidget):
             tr("{n} models").format(n=len(self.models)) if self.models else tr("No forecast model found")
         )
 
+    def _sync_flow_option(self) -> None:
+        """Only a vector variable (u and v components: wind) has flow lines to animate."""
+        model = self.models.get(self.model_combo.currentData())
+        variable = model and model.variables.get(self.variable_combo.currentData())
+        visible = bool(variable and variable.calculated)
+        if hasattr(self.form, "setRowVisible"):
+            self.form.setRowVisible(self.animate_flow_check, visible)
+        else:
+            self.animate_flow_check.setVisible(visible)
+
     def _fill_variables(self) -> None:
         self.variable_combo.clear()
         model = self.models.get(self.model_combo.currentData())
@@ -269,6 +291,7 @@ class ForecastDock(QgsDockWidget):
             "LEAD_HOURS": None if self.lead_spin.value() < 0 else self.lead_spin.value(),
             "DAYS": self.days_spin.value() if self.time_combo.currentData() else 0,
             "EVERY_HOURS": self.every_spin.value() or None,
+            "ANIMATE_FLOW": self.animate_flow_check.isChecked(),
             "EXTENT": None,
             "OUTPUT": QgsProcessingOutputLayerDefinition(QgsProcessing.TEMPORARY_OUTPUT, project),
         }

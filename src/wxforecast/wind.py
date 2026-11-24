@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import UTC
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -167,19 +167,23 @@ def to_flow_lines(
     forecasts: Forecast | list[Forecast], path: str | Path, across: int = FLOW_SEEDS_ACROSS
 ) -> Path:
     """GeoPackage layer `flow` of wind streamlines of one or several steps, with fields `speed` (mean
-    along the line), `phase` and `valid_time` (UTC) of the line's step."""
+    along the line), `phase`, `valid_time` (UTC) of the line's step, and `show_from` / `show_until`, the
+    step's span (see `step_ends`) indexed for the QGIS time filter."""
     from osgeo import gdal
 
     from wxforecast.geotiff import atomic
+    from wxforecast.reader import step_ends
 
     if not isinstance(forecasts, list):
         forecasts = [forecasts]
     # The sentinel (filtered out below) keeps the fields typed when no line was traced.
-    features = [_line(None, -1.0, -1.0, "1970-01-01T00:00:00Z")]
-    for forecast in forecasts:
-        valid_time = f"{forecast.valid_time.astimezone(UTC):%Y-%m-%dT%H:%M:%S}Z"
+    epoch = datetime(1970, 1, 1, tzinfo=UTC)
+    features = [_line(None, -1.0, -1.0, epoch, epoch)]
+    ends = step_ends([f.valid_time for f in forecasts])
+    for forecast, end in zip(forecasts, ends, strict=True):
         features += [
-            _line(v.tolist(), speed, phase, valid_time) for v, speed, phase in flow_lines(forecast, across)
+            _line(v.tolist(), speed, phase, forecast.valid_time, end)
+            for v, speed, phase in flow_lines(forecast, across)
         ]
     geojson = json.dumps({"type": "FeatureCollection", "features": features})
     with gdal.ExceptionMgr(useExceptions=True), atomic(path) as tmp:
@@ -192,13 +196,24 @@ def to_flow_lines(
             dstSRS="EPSG:4326",
             where="speed >= 0",
         )
+        with gdal.OpenEx(str(tmp), gdal.OF_VECTOR | gdal.OF_UPDATE) as ds:
+            ds.ExecuteSQL("CREATE INDEX flow_show ON flow (show_from, show_until)")
     logger.info("%d flow lines", len(features) - 1)
     return Path(path)
 
 
-def _line(coordinates: list | None, speed: float, phase: float, valid_time: str) -> dict:
+def _line(coordinates: list | None, speed: float, phase: float, start: datetime, end: datetime) -> dict:
+    start, end = start.astimezone(UTC), end.astimezone(UTC)
     return {
         "type": "Feature",
-        "properties": {"speed": speed, "phase": phase, "valid_time": valid_time},
+        "properties": {
+            "speed": speed,
+            "phase": phase,
+            "valid_time": f"{start:%Y-%m-%dT%H:%M:%S}Z",
+            # QGIS compiles its time filter to GeoPackage SQL with timezone-less literals and `<` acting as
+            # `<=`: UTC without zone, start 1 s late so a frame ending on the next step excludes it.
+            "show_from": f"{start + timedelta(seconds=1):%Y-%m-%dT%H:%M:%S}",
+            "show_until": f"{end:%Y-%m-%dT%H:%M:%S}",
+        },
         "geometry": coordinates and {"type": "LineString", "coordinates": coordinates},
     }

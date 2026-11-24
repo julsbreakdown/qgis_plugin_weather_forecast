@@ -25,6 +25,7 @@ from wxforecast import colors
 
 STYLES_SETTING = "wxforecast/styles"
 RANGE = "wxforecast/range"
+ANIMATED = "wxforecast/animated"
 
 
 def styles_path() -> str | None:
@@ -114,14 +115,17 @@ FLOW_TRAIL_ALPHA = 70
 FLOW_DASH_MM = (7.0, 7.0)
 
 
-def _flow_symbol(color: QColor, high: float) -> QgsLineSymbol:
-    """A faint trail and dashes moving downwind, paced by speed, in one class colour."""
+def _flow_symbol(color: QColor, high: float, animated: bool) -> QgsLineSymbol:
+    """A faint trail and dashes in one class colour; animated, the dashes move downwind, paced by speed."""
     trail_color = QColor(color)
     trail_color.setAlpha(FLOW_TRAIL_ALPHA)
     trail = QgsSimpleLineSymbolLayer(trail_color, 0.2)
     dash = QgsSimpleLineSymbolLayer(QColor(color), 0.45)
     dash.setUseCustomDashPattern(True)
     dash.setCustomDashVector(list(FLOW_DASH_MM))
+    symbol = QgsLineSymbol([trail, dash])
+    if not animated:
+        return symbol
     period = sum(FLOW_DASH_MM)
     dash.setDataDefinedProperty(
         QgsSymbolLayer.Property.DashPatternOffset,
@@ -130,7 +134,6 @@ def _flow_symbol(color: QColor, high: float) -> QgsLineSymbol:
             f"{0.01 * period:g}, {0.06 * period:g})) % {period:g}"
         ),
     )
-    symbol = QgsLineSymbol([trail, dash])
     animation = QgsSymbolAnimationSettings()
     animation.setIsAnimated(True)
     animation.setFrameRate(FLOW_FPS)
@@ -141,11 +144,17 @@ def _flow_symbol(color: QColor, high: float) -> QgsLineSymbol:
 FLOW_FPS = 20
 
 
+def is_animated(layer: QgsVectorLayer) -> bool:
+    return str(layer.customProperty(ANIMATED, True)).lower() in ("true", "1")
+
+
 def apply_flow_style(layer: QgsVectorLayer, unit: str = "") -> None:
-    """Animated streamlines in the library's flow classes, 0 to the layer max, so the legend shows them."""
+    """Streamlines in the library's flow classes, 0 to the layer max, so the legend shows them; animated
+    unless the layer's `wxforecast/animated` property says otherwise."""
+    animated = is_animated(layer)
     high = max(float(layer.maximumValue(layer.fields().indexOf("speed")) or 0), 1e-9)
     ranges = [
-        QgsRendererRange(low, upper, _flow_symbol(QColor(color), high), label)
+        QgsRendererRange(low, upper, _flow_symbol(QColor(color), high, animated), label)
         for low, upper, color, label in colors.flow_classes(high, unit, styles_path())
     ]
     renderer = QgsGraduatedSymbolRenderer("speed", ranges)
@@ -154,5 +163,5 @@ def apply_flow_style(layer: QgsVectorLayer, unit: str = "") -> None:
     layer.setRenderer(renderer)
     # @symbol_frame only advances on layers that redraw on a timer; loading through Processing drops it.
     layer.setAutoRefreshInterval(1000 // FLOW_FPS)
-    layer.setAutoRefreshMode(Qgis.AutoRefreshMode.RedrawOnly)
+    layer.setAutoRefreshMode(Qgis.AutoRefreshMode.RedrawOnly if animated else Qgis.AutoRefreshMode.Disabled)
     layer.triggerRepaint()
