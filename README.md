@@ -12,15 +12,8 @@ covering your bbox. Plain library (no QGIS, no global state, thread safe) plus a
 ## Supported data
 
 Read from `https://stac.dynamical.org/catalog.json` at run time; `list_models()` is the authority.
-Checked 2026-10-14; grids, read costs and quirks in [docs/data.md](docs/data.md).
-
-| model id | grid | runs | leads |
-|---|---|---|---|
-| `noaa-gfs-forecast` | 0.25°, global | 6 h | 0-384 h: 1 h to 120 h, then 3 h |
-| `ecmwf-aifs-single-forecast` | 0.25°, global | 6 h | 0-360 h, 6 h |
-| `dwd-icon-eu-forecast-5-day` | 0.0625°, Europe | 6 h | 0-120 h: 1 h to 78 h, then 3 h |
-
-Skipped: virtual collections, ensembles, projected grids (HRRR, HRDPS), analyses.
+Checked 2026-10-14. Models served (GFS, ECMWF AIFS, DWD ICON-EU), their grids, runs, leads, read costs and
+quirks, and what is skipped: [docs/data.md](docs/data.md).
 
 | variable | unit | GFS | AIFS | ICON-EU |
 |---|---|---|---|---|

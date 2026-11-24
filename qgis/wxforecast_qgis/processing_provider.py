@@ -30,7 +30,6 @@ from qgis.core import (
 )
 
 import wxforecast
-from wxforecast.tiles import MAX_TILES
 
 from . import indicators, temporal
 from .extent import to_bbox
@@ -40,6 +39,9 @@ from .style import RANGE, apply_flow_style, apply_style, styles_path, variable_k
 WGS84 = QgsCoordinateReferenceSystem("EPSG:4326")
 DEFAULT_MODEL = "noaa-gfs-forecast"
 DEFAULT_VARIABLE = "temperature_2m"
+MAX_LEAD_HOURS = 840
+MAX_DAYS = 16
+MAX_EVERY_HOURS = 240
 WHOLE_WORLD = (-180.0, -90.0, 180.0, 90.0)
 # Processing holds post-processors by raw pointer: keep each alive until it has run.
 _STYLERS: set["_Styler"] = set()
@@ -74,7 +76,7 @@ class _ForecastAlgorithm(QgsProcessingAlgorithm):
                 QgsProcessingParameterNumber.Type.Integer,
                 optional=True,
                 minValue=0,
-                maxValue=840,
+                maxValue=MAX_LEAD_HOURS,
             )
         )
         self.addParameter(
@@ -84,7 +86,7 @@ class _ForecastAlgorithm(QgsProcessingAlgorithm):
                 QgsProcessingParameterNumber.Type.Integer,
                 0,
                 minValue=0,
-                maxValue=16,
+                maxValue=MAX_DAYS,
             )
         )
         self.addParameter(
@@ -94,16 +96,15 @@ class _ForecastAlgorithm(QgsProcessingAlgorithm):
                 QgsProcessingParameterNumber.Type.Integer,
                 optional=True,
                 minValue=1,
-                maxValue=240,
+                maxValue=MAX_EVERY_HOURS,
             )
         )
         self.addParameter(QgsProcessingParameterExtent("EXTENT", "Extent", optional=True))
 
-    def _fetch(self, parameters, context, feedback, bbox) -> tuple[list, int]:
-        """The forecast steps and the animation days asked (0: one map at the map time)."""
+    def _fetch(self, parameters, context, feedback, bbox, days: int) -> list:
+        """The forecast steps of `days` of animation (0: one map at the map time)."""
         model = self.parameterAsString(parameters, "MODEL", context)
         variable = self.parameterAsString(parameters, "VARIABLE", context)
-        days = self.parameterAsInt(parameters, "DAYS", context)
         feedback.pushInfo(f"Fetching {variable} from {model}, bbox {bbox or 'whole world'}")
         try:
             if days:
@@ -119,7 +120,7 @@ class _ForecastAlgorithm(QgsProcessingAlgorithm):
             f"Run {first.init_time:%Y-%m-%d %H:%M} UTC, {len(forecasts)} step(s) valid "
             f"{first.valid_time:%Y-%m-%d %H:%M} to {last.valid_time:%Y-%m-%d %H:%M} UTC"
         )
-        return forecasts, days
+        return forecasts
 
     def _bbox(self, parameters, context):
         if not parameters.get("EXTENT"):
@@ -160,7 +161,8 @@ class FetchForecastAlgorithm(_ForecastAlgorithm):
         self.addOutput(QgsProcessingOutputMultipleLayers("STEPS", "Forecast steps"))
 
     def processAlgorithm(self, parameters, context, feedback):
-        forecasts, days = self._fetch(parameters, context, feedback, self._bbox(parameters, context))
+        days = self.parameterAsInt(parameters, "DAYS", context)
+        forecasts = self._fetch(parameters, context, feedback, self._bbox(parameters, context), days)
         path = self.parameterAsOutputLayer(parameters, "OUTPUT", context)
         model = self.parameterAsString(parameters, "MODEL", context)
         forecast = forecasts[0]
@@ -369,16 +371,11 @@ class ExportPmtilesAlgorithm(_ForecastAlgorithm):
                 max_zoom = self.parameterAsInt(parameters, "MAX_ZOOM", context)
             # Max zoom empty: the grid's zoom is unknown before the fetch, so min zoom is the lower bound.
             lowest, name = (min_zoom, "min") if max_zoom is None else (max_zoom, "max")
-            per_step = " per step" if days else ""
-            steps_note = "; the limit covers all steps, checked after the fetch" if days else ""
-            count = wxforecast.estimate_tiles(areas, min_zoom, lowest)
-            if count > MAX_TILES:
-                raise QgsProcessingException(
-                    f"About {count} tiles{per_step} exceed the limit of {MAX_TILES}, lower the {name} zoom"
-                )
+            count = wxforecast.estimate_tiles(areas, min_zoom, lowest, hint=f"lower the {name} zoom")
             if max_zoom is not None:
-                feedback.pushInfo(f"About {count} tiles{per_step}{steps_note}")
-            forecasts, days = self._fetch(parameters, context, feedback, wxforecast.areas_bbox(areas))
+                steps_note = " per step; the limit covers all steps, checked after the fetch" if days else ""
+                feedback.pushInfo(f"About {count} tiles{steps_note}")
+            forecasts = self._fetch(parameters, context, feedback, wxforecast.areas_bbox(areas), days)
             write = wxforecast.to_pmtiles_steps if days else wxforecast.to_pmtiles
             path = write(
                 forecasts if days else forecasts[0],

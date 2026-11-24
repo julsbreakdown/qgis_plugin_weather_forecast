@@ -31,13 +31,11 @@ import wxforecast
 
 from . import indicators
 from .icons import kind_icon
+from .processing_provider import DEFAULT_MODEL, MAX_DAYS, MAX_EVERY_HOURS, MAX_LEAD_HOURS
 from .style import save_styles_path, styles_path, variable_kind
 
 TAG = "Weather Forecast"
 ALGORITHM = "wxforecast:fetchforecast"
-MAX_LEAD_HOURS = 840
-MAX_DAYS = 16
-DEFAULT_MODEL = "noaa-gfs-forecast"
 
 
 def _load_models(task: QgsTask) -> dict:
@@ -74,7 +72,7 @@ class ForecastDock(QgsDockWidget):
             "Temporal Controller."
         )
         self.every_spin = QSpinBox()
-        self.every_spin.setRange(0, 240)
+        self.every_spin.setRange(0, MAX_EVERY_HOURS)
         self.every_spin.setSpecialValueText("all steps")
         self.every_spin.setSuffix(" h")
         self.every_spin.setToolTip(
