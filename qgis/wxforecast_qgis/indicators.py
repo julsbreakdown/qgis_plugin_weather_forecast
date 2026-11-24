@@ -4,6 +4,7 @@ from qgis.core import QgsLayerTree, QgsLayerTreeNode, QgsProject, QgsRasterLayer
 from qgis.gui import QgsLayerTreeViewIndicator
 from qgis.PyQt import sip
 
+from .i18n import tr
 from .icons import kind_icon
 from .style import apply_flow_style, apply_style
 
@@ -27,8 +28,10 @@ def tag(target, variable: str, kind: str, components: tuple[str, ...] = (), unit
 
 def describe(variable: str, components: tuple[str, ...] | list[str]) -> str:
     if components:
-        return f"{variable}: calculated from {', '.join(components)}"
-    return f"{variable}: raw, read as stored"
+        return tr("{variable}: calculated from {components}").format(
+            variable=variable, components=", ".join(components)
+        )
+    return tr("{variable}: raw, read as stored").format(variable=variable)
 
 
 def read_tag(node: QgsLayerTreeNode) -> dict | None:

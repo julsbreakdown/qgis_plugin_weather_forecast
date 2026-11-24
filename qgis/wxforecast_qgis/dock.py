@@ -30,6 +30,7 @@ from qgis.PyQt.QtWidgets import (
 import wxforecast
 
 from . import indicators
+from .i18n import tr
 from .icons import kind_icon
 from .processing_provider import DEFAULT_MODEL, MAX_DAYS, MAX_EVERY_HOURS, MAX_LEAD_HOURS
 from .style import save_styles_path, styles_path, variable_kind
@@ -44,7 +45,7 @@ def _load_models(task: QgsTask) -> dict:
 
 class ForecastDock(QgsDockWidget):
     def __init__(self, iface):
-        super().__init__("Weather forecast", iface.mainWindow())
+        super().__init__(tr("Weather forecast"), iface.mainWindow())
         self.setObjectName("WxForecastDock")
         self.iface = iface
         self.models = {}
@@ -55,61 +56,67 @@ class ForecastDock(QgsDockWidget):
         self.variable_combo = QComboBox()
         self.lead_spin = QSpinBox()
         self.lead_spin.setRange(-1, MAX_LEAD_HOURS)
-        self.lead_spin.setSpecialValueText("now")
+        self.lead_spin.setSpecialValueText(tr("now"))
         self.lead_spin.setPrefix("+")
         self.lead_spin.setSuffix(" h")
         self.lead_spin.setValue(-1)
         self.lead_spin.setToolTip(
-            "Single map: hours after the latest model run. 'now' picks the forecast nearest the current "
-            "time. Greyed out when Animation is on."
+            tr(
+                "Single map: hours after the latest model run. 'now' picks the forecast nearest the current "
+                "time. Greyed out when Animation is on."
+            )
         )
         self.days_spin = QSpinBox()
         self.days_spin.setRange(0, MAX_DAYS)
-        self.days_spin.setSpecialValueText("off")
-        self.days_spin.setSuffix(" days")
+        self.days_spin.setSpecialValueText(tr("off"))
+        self.days_spin.setSuffix(tr(" days"))
         self.days_spin.setToolTip(
-            "Off: one map. On: every forecast step from now to now + N days, as layers for the "
-            "Temporal Controller."
+            tr(
+                "Off: one map. On: every forecast step from now to now + N days, as layers for the "
+                "Temporal Controller."
+            )
         )
         self.every_spin = QSpinBox()
         self.every_spin.setRange(0, MAX_EVERY_HOURS)
-        self.every_spin.setSpecialValueText("all steps")
+        self.every_spin.setSpecialValueText(tr("all steps"))
         self.every_spin.setSuffix(" h")
         self.every_spin.setToolTip(
-            "Animation only: keep one step every N hours (GFS is hourly to 120 h, then 3-hourly). "
-            "Greyed out when Animation is off."
+            tr(
+                "Animation only: keep one step every N hours (GFS is hourly to 120 h, then 3-hourly). "
+                "Greyed out when Animation is off."
+            )
         )
         self.extent_widget = QgsExtentWidget(None, QgsExtentWidget.WidgetStyle.CondensedStyle)
         self.extent_widget.setMapCanvas(iface.mapCanvas())
-        self.extent_widget.setNullValueAllowed(True, "Whole world")
+        self.extent_widget.setNullValueAllowed(True, tr("Whole world"))
         canvas = iface.mapCanvas()
         if QgsProject.instance().mapLayers():
             self.extent_widget.setOutputExtentFromUser(canvas.extent(), canvas.mapSettings().destinationCrs())
         else:
             self.extent_widget.clear()
-        self.fetch_button = QPushButton("Fetch")
-        self.reload_button = QPushButton("Reload catalog")
+        self.fetch_button = QPushButton(tr("Fetch"))
+        self.reload_button = QPushButton(tr("Reload catalog"))
         self.status = QLabel()
         self.status.setWordWrap(True)
         self.styles_widget = QgsFileWidget()
         self.styles_widget.setFilter("Styles (*.toml)")
         self.styles_widget.setFilePath(styles_path() or "")
-        self.styles_widget.setToolTip("Style override file (TOML); empty: the library defaults")
+        self.styles_widget.setToolTip(tr("Style override file (TOML); empty: the library defaults"))
         self.styles_button = QToolButton()
         self.styles_button.setIcon(QgsApplication.getThemeIcon("mActionRefresh.svg"))
-        self.styles_button.setToolTip("Reload styles and restyle the forecast layers")
+        self.styles_button.setToolTip(tr("Reload styles and restyle the forecast layers"))
         styles_row = QHBoxLayout()
         styles_row.addWidget(self.styles_widget)
         styles_row.addWidget(self.styles_button)
 
         form = QFormLayout()
-        form.addRow("Model", self.model_combo)
-        form.addRow("Variable", self.variable_combo)
-        form.addRow("Map time", self.lead_spin)
-        form.addRow("Animation", self.days_spin)
-        form.addRow("Step interval", self.every_spin)
-        form.addRow("Extent", self.extent_widget)
-        form.addRow("Styles", styles_row)
+        form.addRow(tr("Model"), self.model_combo)
+        form.addRow(tr("Variable"), self.variable_combo)
+        form.addRow(tr("Map time"), self.lead_spin)
+        form.addRow(tr("Animation"), self.days_spin)
+        form.addRow(tr("Step interval"), self.every_spin)
+        form.addRow(tr("Extent"), self.extent_widget)
+        form.addRow(tr("Styles"), styles_row)
         buttons = QHBoxLayout()
         buttons.addWidget(self.reload_button)
         buttons.addWidget(self.fetch_button)
@@ -161,14 +168,18 @@ class ForecastDock(QgsDockWidget):
         try:
             wxforecast.colors.load_styles(path or None)
         except (OSError, ValueError) as exc:
-            self._report(f"Styles not applied: {exc}")
+            self._report(tr("Styles not applied: {error}").format(error=exc))
             return
         save_styles_path(path)
         count = indicators.restyle(QgsProject.instance())
         indicators.rebuild()
         if self.models:
             self._fill_variables()
-        self.status.setText(f"Styles reloaded from {path or 'the defaults'}: {count} layer(s) restyled")
+        self.status.setText(
+            tr("Styles reloaded from {path}: {count} layer(s) restyled").format(
+                path=path or tr("the defaults"), count=count
+            )
+        )
 
     def _reload_catalog(self) -> None:
         wxforecast.catalog.cache_clear()
@@ -177,8 +188,8 @@ class ForecastDock(QgsDockWidget):
     def _load_catalog(self) -> None:
         self._set_ready(False)
         self.reload_button.setEnabled(False)
-        self.status.setText("Loading catalog...")
-        self.catalog_task = QgsTask.fromFunction("Load weather forecast catalog", _load_models)
+        self.status.setText(tr("Loading catalog..."))
+        self.catalog_task = QgsTask.fromFunction(tr("Load weather forecast catalog"), _load_models)
         self.catalog_task.taskCompleted.connect(self._catalog_loaded)
         self.catalog_task.taskTerminated.connect(self._catalog_loaded)
         QgsApplication.taskManager().addTask(self.catalog_task)
@@ -187,8 +198,8 @@ class ForecastDock(QgsDockWidget):
         task, self.catalog_task = self.catalog_task, None
         self.reload_button.setEnabled(True)
         if task.exception is not None or task.returned_values is None:
-            error = task.exception or "cancelled"
-            self._report(f"Cannot load the catalog: {error}", repr(error))
+            error = task.exception or tr("cancelled")
+            self._report(tr("Cannot load the catalog: {error}").format(error=error), repr(error))
             return
         self.models = task.returned_values
         self.model_combo.blockSignals(True)
@@ -199,7 +210,9 @@ class ForecastDock(QgsDockWidget):
         self.model_combo.blockSignals(False)
         self._fill_variables()
         self._set_ready(bool(self.models))
-        self.status.setText(f"{len(self.models)} models" if self.models else "No forecast model found")
+        self.status.setText(
+            tr("{n} models").format(n=len(self.models)) if self.models else tr("No forecast model found")
+        )
 
     def _fill_variables(self) -> None:
         self.variable_combo.clear()
@@ -210,7 +223,9 @@ class ForecastDock(QgsDockWidget):
         try:
             kinds = [variable_kind(variable.name, variable.unit) for variable in entries]
         except (OSError, ValueError) as exc:
-            self._report(f"Styles file unusable, fix it or clear the Styles field: {exc}")
+            self._report(
+                tr("Styles file unusable, fix it or clear the Styles field: {error}").format(error=exc)
+            )
             kinds = [None] * len(entries)
         for variable, kind in zip(entries, kinds, strict=True):
             label = variable.long_name or variable.name
@@ -247,21 +262,23 @@ class ForecastDock(QgsDockWidget):
         self.job = (task, algorithm, context, feedback, variable)
         task.executed.connect(self._fetched)
         self.fetch_button.setEnabled(False)
-        self.status.setText(f"Fetching {variable}...")
+        self.status.setText(tr("Fetching {variable}...").format(variable=variable))
         QgsApplication.taskManager().addTask(task)
 
     def _fetched(self, ok: bool, results: dict) -> None:
         (_, algorithm, context, feedback, variable), self.job = self.job, None
         self.fetch_button.setEnabled(self.variable_combo.count() > 0)
         if feedback.isCanceled():
-            self.status.setText(f"Fetch of {variable} cancelled")
+            self.status.setText(tr("Fetch of {variable} cancelled").format(variable=variable))
         elif not ok:
             log = feedback.textLog().strip()
-            error = log.splitlines()[-1] if log else "unknown error"
-            self._report(f"Fetch of {variable} failed: {error}", log)
+            error = log.splitlines()[-1] if log else tr("unknown error")
+            self._report(
+                tr("Fetch of {variable} failed: {error}").format(variable=variable, error=error), log
+            )
         else:
             handleAlgorithmResults(algorithm, context, feedback, results)
-            self.status.setText(f"Fetched {variable}")
+            self.status.setText(tr("Fetched {variable}").format(variable=variable))
 
 
 def menu_variables(model) -> list:
