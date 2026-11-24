@@ -7,8 +7,8 @@ Weather forecast maps (GFS, ECMWF AIFS, DWD ICON-EU) in QGIS and Python, from th
 
 - **QGIS plugin**: pick a model, a variable, and a single time or a time range; get a styled layer ready for
   the Temporal Controller, with animated wind flow lines. See [`qgis/`](qgis/README.md).
-- **Python library**: fetch a forecast over a bbox and write a Cloud Optimized GeoTIFF, PMTiles, wind flow
-  lines (GeoPackage) or a GeoServer SLD. No QGIS needed, thread safe, usable from DAGs.
+- **Python library**: fetch a forecast over a bbox and write a Cloud Optimized GeoTIFF, PMTiles or wind
+  flow lines (GeoPackage). No QGIS needed.
 - **Light**: no account or API key; only the data chunks covering your area are downloaded.
 
 ![Animated wind flow lines in QGIS](assets/qgis_wind_flow.gif)
