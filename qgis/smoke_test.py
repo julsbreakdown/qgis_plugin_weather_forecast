@@ -260,6 +260,12 @@ assert [name for name, _, _ in entries] == ["temperature_2m", "wind_10m", "wind_
 assert all(not item_icon.isNull() and not item_icon.pixmap(24, 24).isNull() for _, _, item_icon in entries)
 assert entries[1][1] == "wind_10m: calculated from wind_u_10m, wind_v_10m", entries[1][1]
 assert [tip.endswith("raw, read as stored") for _, tip, _ in entries] == [True, False, True, True]
+shown = []
+for name in ("temperature_2m", "wind_10m", "wind_u_10m"):
+    combo.setCurrentIndex(combo.findData(name))
+    shown.append(not dock.animate_flow_check.isHidden())
+assert shown == [False, True, False], f"Animated wind only for a vector variable: {shown}"
+combo.setCurrentIndex(combo.findData("temperature_2m"))
 assert entries[1][2].availableSizes() and not entries[2][2].availableSizes(), "only calculated is badged"
 assert entries[1][2].cacheKey() == kind_icon("wind", True).cacheKey()
 

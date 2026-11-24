@@ -57,9 +57,9 @@ Click **Weather forecast** in the toolbar to open the panel.
 4. **Fetch** runs in the background and can be cancelled.
 
 Wind adds a group with the speed raster and flow lines (a GeoPackage of streamlines coloured by speed).
-With **Animated wind** (default on) their dashes move downwind; the layer is then redrawn continuously,
-which can be slow on large extents or long time ranges. Off, the dashes stay still. Processing:
-`ANIMATE_FLOW`. Direction is meteorological: where the wind blows from (westerly = 270).
+**Animated wind**, shown only for wind (default on), makes their dashes move downwind; the layer is then
+redrawn continuously, which can be slow on large extents or long time ranges. Off, the dashes stay still.
+Processing: `ANIMATE_FLOW`. Direction is meteorological: where the wind blows from (westerly = 270).
 
 Colours come from the library styles (`src/wxforecast/styles.toml`), so a layer looks like its PMTiles.
 **Styles** picks an override TOML file and restyles the project's forecast layers. Clouds, rain and snow

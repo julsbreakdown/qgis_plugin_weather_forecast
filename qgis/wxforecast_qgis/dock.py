@@ -121,7 +121,7 @@ class ForecastDock(QgsDockWidget):
         styles_row.addWidget(self.styles_widget)
         styles_row.addWidget(self.styles_button)
 
-        form = QFormLayout()
+        self.form = form = QFormLayout()
         form.addRow(tr("Model"), self.model_combo)
         form.addRow(tr("Variable"), self.variable_combo)
         form.addRow("", self.animate_flow_check)
@@ -150,6 +150,7 @@ class ForecastDock(QgsDockWidget):
         self.setWidget(body)
 
         self.model_combo.currentIndexChanged.connect(self._fill_variables)
+        self.variable_combo.currentIndexChanged.connect(self._sync_flow_option)
         self.fetch_button.clicked.connect(self._fetch)
         self.time_combo.currentIndexChanged.connect(self._sync_time_mode)
         self.days_spin.valueChanged.connect(self._sync_days_suffix)
@@ -245,6 +246,16 @@ class ForecastDock(QgsDockWidget):
         self.status.setText(
             tr("{n} models").format(n=len(self.models)) if self.models else tr("No forecast model found")
         )
+
+    def _sync_flow_option(self) -> None:
+        """Only a vector variable (u and v components: wind) has flow lines to animate."""
+        model = self.models.get(self.model_combo.currentData())
+        variable = model and model.variables.get(self.variable_combo.currentData())
+        visible = bool(variable and variable.calculated)
+        if hasattr(self.form, "setRowVisible"):
+            self.form.setRowVisible(self.animate_flow_check, visible)
+        else:
+            self.animate_flow_check.setVisible(visible)
 
     def _fill_variables(self) -> None:
         self.variable_combo.clear()
