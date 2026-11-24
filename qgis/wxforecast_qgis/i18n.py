@@ -8,11 +8,11 @@ FRENCH = {
     "Greyed out when Animation is on.": "Carte unique : heures après le dernier run du modèle. "
     "« maintenant » prend la prévision la plus proche de l'heure actuelle. "
     "Grisé quand l'animation est active.",
-    "off": "désactivée",
+    " day": " jour",
     " days": " jours",
-    "Off: one map. On: every forecast step from now to now + N days, as layers for the "
+    "Off: one map. On: every forecast step from now to now + duration, as layers for the "
     "Temporal Controller.": (
-        "Désactivée : une seule carte. Activée : chaque échéance de maintenant à maintenant + N jours, "
+        "Désactivée : une seule carte. Activée : chaque échéance de maintenant à maintenant + durée, "
         "en couches pour le contrôleur temporel."
     ),
     "all steps": "toutes les échéances",
@@ -32,6 +32,7 @@ FRENCH = {
     "Variable": "Variable",
     "Map time": "Heure de la carte",
     "Animation": "Animation",
+    "Duration": "Durée",
     "Step interval": "Pas de temps",
     "Extent": "Emprise",
     "Styles": "Styles",

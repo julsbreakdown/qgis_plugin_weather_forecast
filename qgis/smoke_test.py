@@ -231,7 +231,9 @@ def run_dock_fetch():
     wait(lambda: dock.job is None)
 
 
-assert dock.lead_spin.isEnabled() and not dock.every_spin.isEnabled(), "a single map greys step interval"
+assert dock.lead_spin.isEnabled() and not dock.days_spin.isEnabled() and not dock.every_spin.isEnabled(), (
+    "a single map greys duration and step interval"
+)
 dock.lead_spin.setValue(3)
 assert dock.extent_widget.outputExtent().isNull(), "an empty project defaults to the whole world"
 fetches.clear()
@@ -557,7 +559,8 @@ except QgsProcessingException as exc:
 
 project.layerTreeRoot().removeAllChildren()
 combo.setCurrentIndex(combo.findData("temperature_2m"))
-dock.days_spin.setValue(1)
+dock.animate_check.setChecked(True)
+assert dock.days_spin.suffix().strip() == "day", "one day is singular"
 dock.every_spin.setValue(3)
 assert not dock.lead_spin.isEnabled() and dock.every_spin.isEnabled(), "animation greys map time"
 run_dock_fetch()

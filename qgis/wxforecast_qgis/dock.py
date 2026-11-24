@@ -16,6 +16,7 @@ from qgis.gui import QgsDockWidget, QgsExtentWidget, QgsFileWidget
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QFormLayout,
     QHBoxLayout,
@@ -66,16 +67,16 @@ class ForecastDock(QgsDockWidget):
                 "time. Greyed out when Animation is on."
             )
         )
-        self.days_spin = QSpinBox()
-        self.days_spin.setRange(0, MAX_DAYS)
-        self.days_spin.setSpecialValueText(tr("off"))
-        self.days_spin.setSuffix(tr(" days"))
-        self.days_spin.setToolTip(
+        self.animate_check = QCheckBox(tr("Animation"))
+        self.animate_check.setToolTip(
             tr(
-                "Off: one map. On: every forecast step from now to now + N days, as layers for the "
+                "Off: one map. On: every forecast step from now to now + duration, as layers for the "
                 "Temporal Controller."
             )
         )
+        self.days_spin = QSpinBox()
+        self.days_spin.setRange(1, MAX_DAYS)
+        self._sync_days_suffix(self.days_spin.value())
         self.every_spin = QSpinBox()
         self.every_spin.setRange(0, MAX_EVERY_HOURS)
         self.every_spin.setSpecialValueText(tr("all steps"))
@@ -113,7 +114,8 @@ class ForecastDock(QgsDockWidget):
         form.addRow(tr("Model"), self.model_combo)
         form.addRow(tr("Variable"), self.variable_combo)
         form.addRow(tr("Map time"), self.lead_spin)
-        form.addRow(tr("Animation"), self.days_spin)
+        form.addRow(self.animate_check)
+        form.addRow(tr("Duration"), self.days_spin)
         form.addRow(tr("Step interval"), self.every_spin)
         form.addRow(tr("Extent"), self.extent_widget)
         form.addRow(tr("Styles"), styles_row)
@@ -131,7 +133,8 @@ class ForecastDock(QgsDockWidget):
 
         self.model_combo.currentIndexChanged.connect(self._fill_variables)
         self.fetch_button.clicked.connect(self._fetch)
-        self.days_spin.valueChanged.connect(self._sync_time_mode)
+        self.animate_check.toggled.connect(self._sync_time_mode)
+        self.days_spin.valueChanged.connect(self._sync_days_suffix)
         self.reload_button.clicked.connect(self._reload_catalog)
         self.styles_widget.fileChanged.connect(self.reload_styles)
         self.styles_button.clicked.connect(self.reload_styles)
@@ -144,7 +147,14 @@ class ForecastDock(QgsDockWidget):
         self.status.setText(message)
 
     def _set_ready(self, ready: bool) -> None:
-        widgets = (self.model_combo, self.variable_combo, self.lead_spin, self.days_spin, self.every_spin)
+        widgets = (
+            self.model_combo,
+            self.variable_combo,
+            self.lead_spin,
+            self.animate_check,
+            self.days_spin,
+            self.every_spin,
+        )
         for widget in (*widgets, self.extent_widget):
             widget.setEnabled(ready)
         self.fetch_button.setEnabled(ready and self.job is None and self.variable_combo.count() > 0)
@@ -152,9 +162,13 @@ class ForecastDock(QgsDockWidget):
             self._sync_time_mode()
 
     def _sync_time_mode(self) -> None:
-        animated = self.days_spin.value() > 0
+        animated = self.animate_check.isChecked()
         self.lead_spin.setEnabled(not animated)
+        self.days_spin.setEnabled(animated)
         self.every_spin.setEnabled(animated)
+
+    def _sync_days_suffix(self, days: int) -> None:
+        self.days_spin.setSuffix(tr(" day") if days == 1 else tr(" days"))
 
     def unload(self) -> None:
         """Cancel running tasks; their completion slots die with this widget."""
@@ -246,7 +260,7 @@ class ForecastDock(QgsDockWidget):
             "MODEL": self.model_combo.currentData(),
             "VARIABLE": variable,
             "LEAD_HOURS": None if self.lead_spin.value() < 0 else self.lead_spin.value(),
-            "DAYS": self.days_spin.value(),
+            "DAYS": self.days_spin.value() if self.animate_check.isChecked() else 0,
             "EVERY_HOURS": self.every_spin.value() or None,
             "EXTENT": None,
             "OUTPUT": QgsProcessingOutputLayerDefinition(QgsProcessing.TEMPORARY_OUTPUT, project),
