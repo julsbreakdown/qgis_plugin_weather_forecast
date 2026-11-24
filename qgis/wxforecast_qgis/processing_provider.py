@@ -1,5 +1,6 @@
 from collections.abc import Callable
 from datetime import timedelta
+from functools import partial
 from pathlib import Path
 
 import numpy as np
@@ -35,7 +36,7 @@ from . import indicators, temporal
 from .extent import to_bbox
 from .i18n import tr
 from .icons import icon, svg_path
-from .style import RANGE, apply_flow_style, apply_style, styles_path, variable_kind
+from .style import ANIMATED, RANGE, apply_flow_style, apply_style, styles_path, variable_kind
 
 WGS84 = QgsCoordinateReferenceSystem("EPSG:4326")
 DEFAULT_MODEL = "noaa-gfs-forecast"
@@ -168,6 +169,13 @@ class FetchForecastAlgorithm(_ForecastAlgorithm):
 
     def initAlgorithm(self, config=None) -> None:
         self._add_forecast_parameters()
+        self.addParameter(
+            QgsProcessingParameterBoolean(
+                "ANIMATE_FLOW",
+                tr("Animated wind flow lines (moving dashes, redrawn continuously: may be slow)"),
+                True,
+            )
+        )
         self.addParameter(QgsProcessingParameterRasterDestination("OUTPUT", tr("Forecast")))
         self.addOutput(QgsProcessingOutputVectorLayer("FLOW", tr("Wind flow lines")))
         self.addOutput(QgsProcessingOutputMultipleLayers("STEPS", tr("Forecast steps")))
@@ -180,8 +188,9 @@ class FetchForecastAlgorithm(_ForecastAlgorithm):
         forecast = forecasts[0]
         components = tuple(wxforecast.model(model).variables[forecast.variable].components)
         kind = variable_kind(forecast.variable, forecast.unit)
+        animated = self.parameterAsBoolean(parameters, "ANIMATE_FLOW", context)
         if days:
-            return _load_steps(forecasts, days, Path(path), context, (kind, components))
+            return _load_steps(forecasts, days, Path(path), context, (kind, components), animated)
         path = str(wxforecast.to_geotiff(forecast, path))
         name = f"{forecast.variable} {forecast.valid_time:%Y-%m-%d %H:%M} UTC"
         results = {"OUTPUT": path}
@@ -201,7 +210,7 @@ class FetchForecastAlgorithm(_ForecastAlgorithm):
             flow.layerTypeHint = QgsProcessingUtils.LayerHint.Vector
             flow.groupName = name
             flow.layerSortKey = details.layerSortKey + 1
-            flow.setPostProcessor(_Styler(True, tag))
+            flow.setPostProcessor(_Styler(True, tag, partial(_set_animated, animated=animated)))
             context.addLayerToLoadOnCompletion(results["FLOW"], flow)
         return results
 
@@ -212,7 +221,9 @@ def _hours(algorithm, parameters, name: str, context) -> timedelta | None:
     return timedelta(hours=algorithm.parameterAsInt(parameters, name, context))
 
 
-def _load_steps(forecasts: list, days: int, base: Path, context, kind_components: tuple) -> dict:
+def _load_steps(
+    forecasts: list, days: int, base: Path, context, kind_components: tuple, animated: bool
+) -> dict:
     """One COG per step next to `base` and one VRT stacking their first band, loaded as a single layer
     showing each band over its step's time range; wind adds one flow GeoPackage of all steps."""
     first = forecasts[0]
@@ -253,10 +264,16 @@ def _load_steps(forecasts: list, days: int, base: Path, context, kind_components
         flow.layerTypeHint = QgsProcessingUtils.LayerHint.Vector
         flow.groupName = name
         flow.layerSortKey = details.layerSortKey + 1
-        flow.setPostProcessor(_Styler(True, tag, temporal.set_flow_steps))
+        flow.setPostProcessor(_Styler(True, tag, partial(_set_animated, animated=animated, steps=True)))
         loads[results["FLOW"]] = flow
     context.setLayersToLoadOnCompletion(loads)
     return results
+
+
+def _set_animated(layer, animated: bool, steps: bool = False) -> None:
+    layer.setCustomProperty(ANIMATED, animated)
+    if steps:
+        temporal.set_flow_steps(layer)
 
 
 def _tag(layer, variable: str, kind: str, components: tuple[str, ...], group_name: str, unit: str) -> None:

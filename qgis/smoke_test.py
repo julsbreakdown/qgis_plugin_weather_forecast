@@ -382,6 +382,23 @@ assert loaded == ["flow", "speed (m s-1)"], loaded
 assert flow_animated(group.findLayers()[0].layer())
 check_tags(group, "processing")
 
+processing.runAndLoadResults(
+    "wxforecast:fetchforecast",
+    {"MODEL": "m", "VARIABLE": "wind_10m", "ANIMATE_FLOW": False, "OUTPUT": str(out / "still_wind.tif")},
+)
+still = next(
+    layer
+    for layer in project.mapLayers().values()
+    if layer.source().split("|")[0].endswith("still_wind_flow.gpkg")
+)
+assert not flow_animated(still) and still.autoRefreshMode() == Qgis.AutoRefreshMode.Disabled
+still_ranges = still.renderer().ranges()
+still_dash = still_ranges[0].symbol().symbolLayer(1)
+assert not still_dash.dataDefinedProperties().hasActiveProperties(), "static dashes"
+indicators.restyle(project)
+assert not flow_animated(still), "a restyle keeps static flow lines static"
+print("static flow lines: not animated, no redraw timer")
+
 steps = []
 result = processing.run(
     "wxforecast:exportpmtiles",
