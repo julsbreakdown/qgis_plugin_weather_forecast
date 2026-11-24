@@ -3,6 +3,7 @@ from qgis.core import (
     QgsBilinearRasterResampler,
     QgsClassificationEqualInterval,
     QgsColorRampShader,
+    QgsCubicRasterResampler,
     QgsGradientColorRamp,
     QgsGradientStop,
     QgsGraduatedSymbolRenderer,
@@ -26,6 +27,7 @@ from wxforecast import colors
 STYLES_SETTING = "wxforecast/styles"
 RANGE = "wxforecast/range"
 ANIMATED = "wxforecast/animated"
+SMOOTH = "wxforecast/smooth"
 
 
 def styles_path() -> str | None:
@@ -104,9 +106,11 @@ def apply_style(layer: QgsRasterLayer, variable: str, unit: str) -> str:
     renderer.setClassificationMin(low)
     renderer.setClassificationMax(high)
     layer.setRenderer(renderer)
-    if not style.discrete and style.valid == (None, None):
-        # Provider bilinear resampling still drew coarse grids as squares (QGIS 4.2).
-        layer.resampleFilter().setZoomedInResampler(QgsBilinearRasterResampler())
+    smooth = flag(layer, SMOOTH) and not style.discrete and style.valid == (None, None)
+    # Layer resampling, not provider: provider bilinear still drew coarse grids as squares (QGIS 4.2).
+    resampler = layer.resampleFilter()
+    resampler.setZoomedInResampler(QgsCubicRasterResampler() if smooth else None)
+    resampler.setZoomedOutResampler(QgsBilinearRasterResampler() if smooth else None)
     layer.triggerRepaint()
     return kind
 
@@ -146,14 +150,15 @@ def _flow_symbol(color: QColor, high: float, animated: bool) -> QgsLineSymbol:
 FLOW_FPS = 20
 
 
-def is_animated(layer: QgsVectorLayer) -> bool:
-    return str(layer.customProperty(ANIMATED, True)).lower() in ("true", "1")
+def flag(layer, key: str) -> bool:
+    """A yes/no layer option, on unless set off (a project reload turns the bool into a string)."""
+    return str(layer.customProperty(key, True)).lower() in ("true", "1")
 
 
 def apply_flow_style(layer: QgsVectorLayer, unit: str = "") -> None:
     """Streamlines in the library's flow classes, 0 to the layer max, so the legend shows them; animated
     unless the layer's `wxforecast/animated` property says otherwise."""
-    animated = is_animated(layer)
+    animated = flag(layer, ANIMATED)
     high = max(float(layer.maximumValue(layer.fields().indexOf("speed")) or 0), 1e-9)
     ranges = [
         QgsRendererRange(low, upper, _flow_symbol(QColor(color), high, animated), label)

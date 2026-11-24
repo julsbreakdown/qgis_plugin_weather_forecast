@@ -61,6 +61,10 @@ Wind adds a group with the speed raster and flow lines (a GeoPackage of streamli
 redrawn continuously, which can be slow on large extents or long time ranges. Off, the dashes stay still.
 Processing: `ANIMATE_FLOW`. Direction is meteorological: where the wind blows from (westerly = 270).
 
+**Smooth rasters** (default on) interpolates between grid cells (cubic when zoomed in), so coarse models
+do not show square pixels; off shows the model's grid. Flags and variables with fill values stay square.
+Processing: `SMOOTH`.
+
 Colours come from the library styles (`src/wxforecast/styles.toml`), so a layer looks like its PMTiles.
 **Styles** picks an override TOML file and restyles the project's forecast layers. Clouds, rain and snow
 are transparent at 0, so the map shows through.
