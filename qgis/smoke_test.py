@@ -231,7 +231,9 @@ def run_dock_fetch():
     wait(lambda: dock.job is None)
 
 
-assert dock.lead_spin.isEnabled() and not dock.every_spin.isEnabled(), "a single map greys step interval"
+assert dock.lead_spin.isEnabled() and not dock.days_spin.isEnabled() and not dock.every_spin.isEnabled(), (
+    "a single map greys duration and step interval"
+)
 dock.lead_spin.setValue(3)
 assert dock.extent_widget.outputExtent().isNull(), "an empty project defaults to the whole world"
 fetches.clear()
@@ -467,20 +469,21 @@ processing.runAndLoadResults(
     "wxforecast:fetchforecast",
     {"MODEL": "m", "VARIABLE": "temperature_2m", "DAYS": 1, "OUTPUT": str(out / "steps.tif")},
 )
-group, layers = step_group("temperature_2m 2026-10-12 00:00 UTC +1 d")
-rasters = sorted(layers, key=lambda layer: layer.temporalProperties().fixedTemporalRange().begin())
-ranges = [layer.temporalProperties().fixedTemporalRange() for layer in rasters]
-print("steps:", [layer.name() for layer in rasters])
-assert len(rasters) == len(STEP_HOURS) and all(layer.temporalProperties().isActive() for layer in rasters)
+(stack,) = project.mapLayersByName("temperature_2m 2026-10-12 00:00 UTC +1 d")
+assert stack.source().endswith("steps.vrt") and stack.bandCount() == len(STEP_HOURS)
+properties = stack.temporalProperties()
+assert properties.isActive() and properties.mode() == Qgis.RasterTemporalMode.FixedRangePerBand
+by_band = properties.fixedRangePerBand()
+ranges = [by_band[band] for band in sorted(by_band)]
+print("steps:", [stack.bandName(band) for band in sorted(by_band)])
+assert len(ranges) == len(STEP_HOURS)
 assert all(r.includeBeginning() and not r.includeEnd() for r in ranges)
 assert all(a.end() == b.begin() for a, b in pairwise(ranges)), "contiguous, no overlap"
 assert [r.begin().toSecsSinceEpoch() for r in ranges] == [
     int((RUN + timedelta(hours=h)).timestamp()) for h in STEP_HOURS
 ]
 assert ranges[-1].end().toSecsSinceEpoch() - ranges[-1].begin().toSecsSinceEpoch() == 3 * 3600
-limits = {(layer.renderer().classificationMin(), layer.renderer().classificationMax()) for layer in rasters}
-assert len(limits) == 1, f"one shared range: {limits}"
-assert all(Path(layer.source()).name.startswith("steps_temperature_2m_2026101") for layer in rasters)
+assert len(list(out.glob("steps_temperature_2m_2026101*.tif"))) == len(STEP_HOURS), "step files kept"
 extent = navigation.temporalExtents()
 assert extent.begin() == ranges[0].begin() and extent.end() == ranges[-1].end(), extent
 assert navigation.frameDuration().hours() == 1 and not temporal_dock.isHidden()
@@ -493,7 +496,8 @@ processing.runAndLoadResults(
 )
 group, layers = step_group("wind_10m 2026-10-12 00:00 UTC +1 d")
 flow = next(layer for layer in layers if layer.name() == "flow")
-assert layers[0].name() == "flow" and len(layers) == len(STEP_HOURS) + 1
+assert layers[0].name() == "flow" and len(layers) == 2
+assert layers[1].source().endswith("w.vrt") and layers[1].bandCount() == len(STEP_HOURS)
 assert flow.temporalProperties().isActive() and flow_animated(flow)
 check_tags(group, "time steps")
 counts = []
@@ -557,16 +561,19 @@ except QgsProcessingException as exc:
 
 project.layerTreeRoot().removeAllChildren()
 combo.setCurrentIndex(combo.findData("temperature_2m"))
-dock.days_spin.setValue(1)
+dock.time_combo.setCurrentIndex(dock.time_combo.findData(True))
+assert dock.days_spin.suffix().strip() == "day", "one day is singular"
 dock.every_spin.setValue(3)
-assert not dock.lead_spin.isEnabled() and dock.every_spin.isEnabled(), "animation greys map time"
+assert not dock.lead_spin.isEnabled() and dock.every_spin.isEnabled(), "a time range greys map time"
 run_dock_fetch()
-group, layers = step_group("temperature_2m 2026-10-12 00:00 UTC +1 d")
-assert len(layers) == len(STEP_HOURS) and all(layer.temporalProperties().isActive() for layer in layers)
-print("dock animation:", dock.status.text(), len(layers), "step layers")
+(stack,) = project.mapLayersByName("temperature_2m 2026-10-12 00:00 UTC +1 d")
+assert stack.temporalProperties().isActive() and stack.bandCount() == len(STEP_HOURS)
+print("dock time range:", dock.status.text(), stack.bandCount(), "bands in one layer")
+node = project.layerTreeRoot().findLayer(stack.id())
+assert view.indicators(node), "the animation layer is tagged"
 
 tree_indicators.unload()
-assert not view.indicators(group)
+assert not view.indicators(node)
 dock.unload()
 
 project.addMapLayer(QgsVectorLayer("Point?crs=EPSG:4326", "basemap", "memory"))

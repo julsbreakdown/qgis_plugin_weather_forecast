@@ -4,6 +4,7 @@ from functools import partial
 from pathlib import Path
 
 import numpy as np
+from osgeo import gdal
 from qgis.core import (
     QgsCoordinateReferenceSystem,
     QgsCoordinateTransform,
@@ -75,7 +76,7 @@ class _ForecastAlgorithm(QgsProcessingAlgorithm):
                 "LEAD_HOURS",
                 tr(
                     "Map time: hours after the latest run "
-                    "(empty: forecast nearest now; ignored with Animation)"
+                    "(empty: forecast nearest now; ignored with a time range)"
                 ),
                 QgsProcessingParameterNumber.Type.Integer,
                 optional=True,
@@ -86,7 +87,9 @@ class _ForecastAlgorithm(QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterNumber(
                 "DAYS",
-                tr("Animation: days ahead (0: off, one map; else every step from now to now + days)"),
+                tr(
+                    "Time range: days ahead (0: single time, one map; else every step from now to now + days)"
+                ),
                 QgsProcessingParameterNumber.Type.Integer,
                 0,
                 minValue=0,
@@ -96,7 +99,7 @@ class _ForecastAlgorithm(QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterNumber(
                 "EVERY_HOURS",
-                tr("Step interval in hours, Animation only (empty: all steps)"),
+                tr("Step interval in hours, time range only (empty: all steps)"),
                 QgsProcessingParameterNumber.Type.Integer,
                 optional=True,
                 minValue=1,
@@ -106,7 +109,7 @@ class _ForecastAlgorithm(QgsProcessingAlgorithm):
         self.addParameter(QgsProcessingParameterExtent("EXTENT", tr("Extent"), optional=True))
 
     def _fetch(self, parameters, context, feedback, bbox, days: int) -> list:
-        """The forecast steps of `days` of animation (0: one map at the map time)."""
+        """The forecast steps of `days` of time range (0: one map at the map time)."""
         model = self.parameterAsString(parameters, "MODEL", context)
         variable = self.parameterAsString(parameters, "VARIABLE", context)
         feedback.pushInfo(
@@ -155,8 +158,8 @@ class FetchForecastAlgorithm(_ForecastAlgorithm):
     def shortHelpString(self) -> str:
         return tr(
             "Fetches one forecast map from dynamical.org into a styled GeoTIFF. No extent: whole world. "
-            "Animation (days > 0): one GeoTIFF per step in one group, each with its time range for the "
-            "Temporal Controller, all styled over one value range. "
+            "Time range (days > 0): one GeoTIFF per step and one VRT stacking them, loaded as a single "
+            "layer that shows each step over its time range in the Temporal Controller. "
             "A wind variable (e.g. wind_10m) gives the speed raster, with a direction band, and a "
             "GeoPackage of animated flow lines next to it, both loaded in one group."
         )
@@ -211,45 +214,46 @@ def _hours(algorithm, parameters, name: str, context) -> timedelta | None:
 
 
 def _load_steps(forecasts: list, days: int, base: Path, context, kind_components: tuple) -> dict:
-    """One COG per step next to `base`, loaded in one group with each its time range and one value
-    range; wind adds one flow GeoPackage of all steps."""
+    """One COG per step next to `base` and one VRT stacking their first band, loaded as a single layer
+    showing each band over its step's time range; wind adds one flow GeoPackage of all steps."""
     first = forecasts[0]
     paths = [
         str(wxforecast.to_geotiff(f, base.with_name(f"{base.stem}_{wxforecast.step_name(f)}.tif")))
         for f in forecasts
     ]
-    results = {"OUTPUT": paths[0], "STEPS": paths}
+    starts = [f.valid_time for f in forecasts]
+    ends = temporal.step_ends(starts)
+    vrt = str(base.with_suffix(".vrt"))
+    stack = gdal.BuildVRT(vrt, paths, separate=True, bandList=[1])
+    for band, start in enumerate(starts, 1):
+        stack.GetRasterBand(band).SetDescription(f"{start:%Y-%m-%dT%H:%M}Z")
+    stack = None
+    results = {"OUTPUT": vrt, "STEPS": paths}
     if first.direction is not None:
         results["FLOW"] = str(wxforecast.to_flow_lines(forecasts, base.with_name(f"{base.stem}_flow.gpkg")))
     if not context.willLoadLayerOnCompletion(str(base)):
         return results
     kind, components = kind_components
-    starts = [f.valid_time for f in forecasts]
-    ends = temporal.step_ends(starts)
     frame = min(end - start for start, end in zip(starts, ends, strict=True))
     low, high = wxforecast.colors.value_range(np.stack([f.values for f in forecasts]), kind, styles_path())
-    group = f"{first.variable} {first.init_time:%Y-%m-%d %H:%M} UTC +{days} d"
-    tag = (first.variable, kind, components, group, first.unit)
-    label = "speed" if first.direction is not None else first.variable
+    name = f"{first.variable} {first.init_time:%Y-%m-%d %H:%M} UTC +{days} d"
+    tag = (first.variable, kind, components, name, first.unit)
 
-    def setup_raster(layer, start, end):
+    def setup_raster(layer):
         layer.setCustomProperty(RANGE, f"{low!r},{high!r}")
-        temporal.set_raster_step(layer, start, end)
+        temporal.set_raster_steps(layer, starts, ends)
         temporal.show_in_controller(starts[0], ends[-1], frame)
 
-    loads = {}
-    for k, (path, start, end) in enumerate(zip(paths, starts, ends, strict=True)):
-        name = f"{label} {start:%Y-%m-%d %H:%M} UTC"
-        details = QgsProcessingContext.LayerDetails(name, context.project(), "OUTPUT")
-        details.groupName = group
-        details.layerSortKey = len(paths) - k
-        details.setPostProcessor(_Styler(False, tag, partial(setup_raster, start=start, end=end)))
-        loads[path] = details
+    details = QgsProcessingContext.LayerDetails(name, context.project(), "OUTPUT")
+    details.setPostProcessor(_Styler(False, tag, setup_raster))
+    loads = {vrt: details}
     if "FLOW" in results:
+        details.name = f"speed ({first.unit})" if first.unit else "speed"
+        details.groupName = name
         flow = QgsProcessingContext.LayerDetails("flow", context.project(), "FLOW")
         flow.layerTypeHint = QgsProcessingUtils.LayerHint.Vector
-        flow.groupName = group
-        flow.layerSortKey = len(paths) + 1
+        flow.groupName = name
+        flow.layerSortKey = details.layerSortKey + 1
         flow.setPostProcessor(_Styler(True, tag, partial(temporal.set_flow_steps, starts=starts, ends=ends)))
         loads[results["FLOW"]] = flow
     context.setLayersToLoadOnCompletion(loads)
@@ -376,7 +380,7 @@ class ExportPmtilesAlgorithm(_ForecastAlgorithm):
             if _has_path(parameters, unused):
                 raise QgsProcessingException(
                     tr(
-                        "Animation (days > 0) writes one PMTiles per step: "
+                        "A time range (days > 0) writes one PMTiles per step: "
                         "set the PMTiles folder, not the file."
                     )
                     if days

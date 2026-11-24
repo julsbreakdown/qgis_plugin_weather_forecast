@@ -30,10 +30,13 @@ def time_range(start: datetime, end: datetime) -> QgsDateTimeRange:
     return QgsDateTimeRange(qdatetime(start), qdatetime(end), True, False)
 
 
-def set_raster_step(layer: QgsRasterLayer, start: datetime, end: datetime) -> None:
+def set_raster_steps(layer: QgsRasterLayer, starts: list[datetime], ends: list[datetime]) -> None:
+    """Band k + 1 shows over the k-th step's range."""
     properties = layer.temporalProperties()
-    properties.setMode(Qgis.RasterTemporalMode.FixedTemporalRange)
-    properties.setFixedTemporalRange(time_range(start, end))
+    properties.setMode(Qgis.RasterTemporalMode.FixedRangePerBand)
+    properties.setFixedRangePerBand(
+        {band: time_range(start, end) for band, (start, end) in enumerate(zip(starts, ends, strict=True), 1)}
+    )
     properties.setIsActive(True)
 
 

@@ -18,6 +18,7 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import (
     QComboBox,
     QFormLayout,
+    QGroupBox,
     QHBoxLayout,
     QLabel,
     QPushButton,
@@ -63,27 +64,29 @@ class ForecastDock(QgsDockWidget):
         self.lead_spin.setToolTip(
             tr(
                 "Single map: hours after the latest model run. 'now' picks the forecast nearest the current "
-                "time. Greyed out when Animation is on."
+                "time. Greyed out with Time range."
+            )
+        )
+        self.time_combo = QComboBox()
+        self.time_combo.addItem(tr("Single time"), False)
+        self.time_combo.addItem(tr("Time range"), True)
+        self.time_combo.setToolTip(
+            tr(
+                "Single time: one map. Time range: every forecast step from now to now + duration, as one "
+                "layer for the Temporal Controller."
             )
         )
         self.days_spin = QSpinBox()
-        self.days_spin.setRange(0, MAX_DAYS)
-        self.days_spin.setSpecialValueText(tr("off"))
-        self.days_spin.setSuffix(tr(" days"))
-        self.days_spin.setToolTip(
-            tr(
-                "Off: one map. On: every forecast step from now to now + N days, as layers for the "
-                "Temporal Controller."
-            )
-        )
+        self.days_spin.setRange(1, MAX_DAYS)
+        self._sync_days_suffix(self.days_spin.value())
         self.every_spin = QSpinBox()
         self.every_spin.setRange(0, MAX_EVERY_HOURS)
         self.every_spin.setSpecialValueText(tr("all steps"))
         self.every_spin.setSuffix(" h")
         self.every_spin.setToolTip(
             tr(
-                "Animation only: keep one step every N hours (GFS is hourly to 120 h, then 3-hourly). "
-                "Greyed out when Animation is off."
+                "Time range only: keep one step every N hours (GFS is hourly to 120 h, then 3-hourly). "
+                "Greyed out with Single time."
             )
         )
         self.extent_widget = QgsExtentWidget(None, QgsExtentWidget.WidgetStyle.CondensedStyle)
@@ -112,9 +115,16 @@ class ForecastDock(QgsDockWidget):
         form = QFormLayout()
         form.addRow(tr("Model"), self.model_combo)
         form.addRow(tr("Variable"), self.variable_combo)
-        form.addRow(tr("Map time"), self.lead_spin)
-        form.addRow(tr("Animation"), self.days_spin)
-        form.addRow(tr("Step interval"), self.every_spin)
+        form.addRow(tr("Time"), self.time_combo)
+        self.single_box = QGroupBox(tr("Single time"))
+        single_form = QFormLayout(self.single_box)
+        single_form.addRow(tr("Map time"), self.lead_spin)
+        self.range_box = QGroupBox(tr("Time range"))
+        range_form = QFormLayout(self.range_box)
+        range_form.addRow(tr("Duration"), self.days_spin)
+        range_form.addRow(tr("Step interval"), self.every_spin)
+        form.addRow(self.single_box)
+        form.addRow(self.range_box)
         form.addRow(tr("Extent"), self.extent_widget)
         form.addRow(tr("Styles"), styles_row)
         buttons = QHBoxLayout()
@@ -131,7 +141,8 @@ class ForecastDock(QgsDockWidget):
 
         self.model_combo.currentIndexChanged.connect(self._fill_variables)
         self.fetch_button.clicked.connect(self._fetch)
-        self.days_spin.valueChanged.connect(self._sync_time_mode)
+        self.time_combo.currentIndexChanged.connect(self._sync_time_mode)
+        self.days_spin.valueChanged.connect(self._sync_days_suffix)
         self.reload_button.clicked.connect(self._reload_catalog)
         self.styles_widget.fileChanged.connect(self.reload_styles)
         self.styles_button.clicked.connect(self.reload_styles)
@@ -144,7 +155,14 @@ class ForecastDock(QgsDockWidget):
         self.status.setText(message)
 
     def _set_ready(self, ready: bool) -> None:
-        widgets = (self.model_combo, self.variable_combo, self.lead_spin, self.days_spin, self.every_spin)
+        widgets = (
+            self.model_combo,
+            self.variable_combo,
+            self.lead_spin,
+            self.time_combo,
+            self.days_spin,
+            self.every_spin,
+        )
         for widget in (*widgets, self.extent_widget):
             widget.setEnabled(ready)
         self.fetch_button.setEnabled(ready and self.job is None and self.variable_combo.count() > 0)
@@ -152,9 +170,12 @@ class ForecastDock(QgsDockWidget):
             self._sync_time_mode()
 
     def _sync_time_mode(self) -> None:
-        animated = self.days_spin.value() > 0
-        self.lead_spin.setEnabled(not animated)
-        self.every_spin.setEnabled(animated)
+        ranged = bool(self.time_combo.currentData())
+        self.single_box.setEnabled(not ranged)
+        self.range_box.setEnabled(ranged)
+
+    def _sync_days_suffix(self, days: int) -> None:
+        self.days_spin.setSuffix(tr(" day") if days == 1 else tr(" days"))
 
     def unload(self) -> None:
         """Cancel running tasks; their completion slots die with this widget."""
@@ -246,7 +267,7 @@ class ForecastDock(QgsDockWidget):
             "MODEL": self.model_combo.currentData(),
             "VARIABLE": variable,
             "LEAD_HOURS": None if self.lead_spin.value() < 0 else self.lead_spin.value(),
-            "DAYS": self.days_spin.value(),
+            "DAYS": self.days_spin.value() if self.time_combo.currentData() else 0,
             "EVERY_HOURS": self.every_spin.value() or None,
             "EXTENT": None,
             "OUTPUT": QgsProcessingOutputLayerDefinition(QgsProcessing.TEMPORARY_OUTPUT, project),
