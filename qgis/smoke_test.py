@@ -443,7 +443,11 @@ except QgsProcessingException as exc:
     assert "at least one output" in str(exc) and len(fetches) == fetched, exc
 
 world = {"MODEL": "m", "EXTENT": "-180,180,-85,85 [EPSG:4326]", "OUTPUT": str(out / "big.pmtiles")}
-for zooms, expected in (({"MAX_ZOOM": 12}, "exceed the limit"), ({"MIN_ZOOM": 5, "MAX_ZOOM": 3}, "zoom")):
+for zooms, expected in (
+    ({"MAX_ZOOM": 12}, "exceed the limit"),
+    ({"MIN_ZOOM": 10}, "lower the min zoom"),
+    ({"MIN_ZOOM": 5, "MAX_ZOOM": 3}, "zoom"),
+):
     fetched = len(fetches)
     try:
         processing.run("wxforecast:exportpmtiles", world | zooms)

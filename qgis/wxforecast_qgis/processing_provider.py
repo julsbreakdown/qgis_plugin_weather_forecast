@@ -378,14 +378,18 @@ class ExportPmtilesAlgorithm(_ForecastAlgorithm):
                 raise QgsProcessingException(f"Pick at least one output: {tiles_output} or {cog_output}.")
             min_zoom = self.parameterAsInt(parameters, "MIN_ZOOM", context)
             max_zoom = None
-            if tiles_path and parameters.get("MAX_ZOOM") not in (None, ""):
+            if parameters.get("MAX_ZOOM") not in (None, ""):
                 max_zoom = self.parameterAsInt(parameters, "MAX_ZOOM", context)
-                count = wxforecast.estimate_tiles(areas, min_zoom, max_zoom)
+            if tiles_path:
+                # Max zoom empty: the grid's zoom is unknown before the fetch, so min zoom is the lower bound.
+                lowest, name = (min_zoom, "min") if max_zoom is None else (max_zoom, "max")
+                count = wxforecast.estimate_tiles(areas, min_zoom, lowest)
                 if count > MAX_TILES:
                     raise QgsProcessingException(
-                        f"About {count} tiles exceed the limit of {MAX_TILES}, lower the max zoom"
+                        f"About {count} tiles exceed the limit of {MAX_TILES}, lower the {name} zoom"
                     )
-                feedback.pushInfo(f"About {count} tiles per step")
+                if max_zoom is not None:
+                    feedback.pushInfo(f"About {count} tiles per step")
             forecasts, days = self._fetch(parameters, context, feedback, wxforecast.areas_bbox(areas))
             results = {}
             if cog_path:

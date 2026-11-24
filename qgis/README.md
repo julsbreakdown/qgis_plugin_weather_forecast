@@ -97,7 +97,8 @@ widgets, batch mode, the Model Builder and `qgis_process`:
   folder `OUTPUT_FOLDER` of one archive per step plus `index.json`, one shared value range), coloured with the
   panel's styles file, with progress and cancel. Wind tiles have the arrows drawn in. Invalid polygons are
   stopped by Processing's own geometry check; with the check off, the library makes them valid.
-  With a max zoom given, the tile count is checked before the download: above about 100 000 the run stops at once.
+  The tile count is checked before the download (max zoom empty: at the min zoom alone): above about 100 000
+  the run stops at once.
   Optional `COG` output (days ahead > 0: folder `COG_FOLDER`, one `<variable>_<YYYYMMDDTHH>.tif` per step):
   the same data as a Cloud Optimized GeoTIFF from the same download (wind: band 2 `direction`). Each output
   can be skipped, not both; from scripts and `qgis_process` an output is written only when given. Nothing is
