@@ -19,6 +19,7 @@ from qgis.PyQt.QtWidgets import (
     QCheckBox,
     QComboBox,
     QFormLayout,
+    QGroupBox,
     QHBoxLayout,
     QLabel,
     QPushButton,
@@ -113,10 +114,16 @@ class ForecastDock(QgsDockWidget):
         form = QFormLayout()
         form.addRow(tr("Model"), self.model_combo)
         form.addRow(tr("Variable"), self.variable_combo)
-        form.addRow(tr("Map time"), self.lead_spin)
         form.addRow(self.animate_check)
-        form.addRow(tr("Duration"), self.days_spin)
-        form.addRow(tr("Step interval"), self.every_spin)
+        self.single_box = QGroupBox(tr("Single map"))
+        single_form = QFormLayout(self.single_box)
+        single_form.addRow(tr("Map time"), self.lead_spin)
+        self.animation_box = QGroupBox(tr("Animation"))
+        animation_form = QFormLayout(self.animation_box)
+        animation_form.addRow(tr("Duration"), self.days_spin)
+        animation_form.addRow(tr("Step interval"), self.every_spin)
+        form.addRow(self.single_box)
+        form.addRow(self.animation_box)
         form.addRow(tr("Extent"), self.extent_widget)
         form.addRow(tr("Styles"), styles_row)
         buttons = QHBoxLayout()
@@ -163,9 +170,8 @@ class ForecastDock(QgsDockWidget):
 
     def _sync_time_mode(self) -> None:
         animated = self.animate_check.isChecked()
-        self.lead_spin.setEnabled(not animated)
-        self.days_spin.setEnabled(animated)
-        self.every_spin.setEnabled(animated)
+        self.single_box.setEnabled(not animated)
+        self.animation_box.setEnabled(animated)
 
     def _sync_days_suffix(self, days: int) -> None:
         self.days_spin.setSuffix(tr(" day") if days == 1 else tr(" days"))

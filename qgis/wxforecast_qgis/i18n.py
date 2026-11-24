@@ -33,6 +33,7 @@ FRENCH = {
     "Map time": "Heure de la carte",
     "Animation": "Animation",
     "Duration": "Durée",
+    "Single map": "Carte unique",
     "Step interval": "Pas de temps",
     "Extent": "Emprise",
     "Styles": "Styles",

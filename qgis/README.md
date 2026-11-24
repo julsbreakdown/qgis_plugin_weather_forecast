@@ -32,14 +32,16 @@ use the same Python minor version as QGIS (3.14 here). Uninstall: delete the sym
    u/v axes, generic). A calculated variable carries a small gear badge: wind is one per level (e.g.
    **10 metre wind**), calculated from its u and v components, which are listed right after it as raw
    entries. The tooltip says `calculated from wind_u_10m, wind_v_10m` or `raw, read as stored`.
-3. **Map time** (single map): `now` picks the forecast nearest the current time in the latest run; otherwise
-   hours after the latest run (`+24 h`). Greyed out when Animation is on.
-4. **Animation** (checkbox, default off) and **Duration** (1-16 days): every step of the latest run from now
-   to now + duration, each its own layer in one group `<variable> <run> UTC +<days> d`, ready for QGIS's
-   Temporal Controller (each layer has its valid time range, until the next step); **Step interval**
-   (Animation only) keeps a step only every so many hours. All steps are styled over one value range; wind
-   adds one flow layer of all steps, filtered by `valid_time`. The Temporal Controller is set to animate the
-   fetched range by the shortest step and its panel is shown. The flow dashes keep moving while it plays.
+3. **Animation** (checkbox, default off) picks which of the two boxes below it is active; the other is greyed
+   out.
+4. **Single map** box, **Map time**: `now` picks the forecast nearest the current time in the latest run;
+   otherwise hours after the latest run (`+24 h`).
+   **Animation** box, **Duration** (1-16 days): every step of the latest run from now to now + duration, each
+   its own layer in one group `<variable> <run> UTC +<days> d`, ready for QGIS's Temporal Controller (each
+   layer has its valid time range, until the next step); **Step interval** keeps a step only every so many
+   hours. All steps are styled over one value range; wind adds one flow layer of all steps, filtered by
+   `valid_time`. The Temporal Controller is set to animate the fetched range by the shortest step and its
+   panel is shown. The flow dashes keep moving while it plays.
 5. **Extent**: QGIS's extent picker: current map canvas, a layer's extent, a bookmark, drawn on the map or
    typed, in any CRS (transformed to EPSG:4326; an extent across the antimeridian is supported). Clear it
    for **Whole world**, the default on an empty project; otherwise it starts on the current canvas.
