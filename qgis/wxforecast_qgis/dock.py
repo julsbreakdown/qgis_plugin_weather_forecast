@@ -56,6 +56,14 @@ class ForecastDock(QgsDockWidget):
 
         self.model_combo = QComboBox()
         self.variable_combo = QComboBox()
+        self.smooth_check = QCheckBox(tr("Smooth rasters"))
+        self.smooth_check.setChecked(True)
+        self.smooth_check.setToolTip(
+            tr(
+                "Interpolate between grid cells instead of drawing them as squares. "
+                "Off: see the model's grid."
+            )
+        )
         self.animate_flow_check = QCheckBox(tr("Animated wind"))
         self.animate_flow_check.setChecked(True)
         self.animate_flow_check.setToolTip(
@@ -125,6 +133,7 @@ class ForecastDock(QgsDockWidget):
         form.addRow(tr("Model"), self.model_combo)
         form.addRow(tr("Variable"), self.variable_combo)
         form.addRow("", self.animate_flow_check)
+        form.addRow("", self.smooth_check)
         form.addRow(tr("Time"), self.time_combo)
         self.single_box = QGroupBox(tr("Single time"))
         single_form = QFormLayout(self.single_box)
@@ -170,6 +179,7 @@ class ForecastDock(QgsDockWidget):
             self.model_combo,
             self.variable_combo,
             self.animate_flow_check,
+            self.smooth_check,
             self.lead_spin,
             self.time_combo,
             self.days_spin,
@@ -292,6 +302,7 @@ class ForecastDock(QgsDockWidget):
             "DAYS": self.days_spin.value() if self.time_combo.currentData() else 0,
             "EVERY_HOURS": self.every_spin.value() or None,
             "ANIMATE_FLOW": self.animate_flow_check.isChecked(),
+            "SMOOTH": self.smooth_check.isChecked(),
             "EXTENT": None,
             "OUTPUT": QgsProcessingOutputLayerDefinition(QgsProcessing.TEMPORARY_OUTPUT, project),
         }

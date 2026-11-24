@@ -38,6 +38,14 @@ FRENCH = {
     "Map time": "Heure de la carte",
     "Time": "Temps",
     "Animated wind": "Vent animé",
+    "Smooth rasters": "Lisser les rasters",
+    "Interpolate between grid cells instead of drawing them as squares. Off: see the model's grid.": (
+        "Interpoler entre les mailles au lieu de les dessiner en carrés. "
+        "Désactivé : voir la grille du modèle."
+    ),
+    "Smooth rasters (interpolated between grid cells, no square pixels)": (
+        "Lisser les rasters (interpolés entre les mailles, sans pixels carrés)"
+    ),
     "Wind only: the flow line dashes move downwind. The layer is redrawn continuously, which "
     "may be slow on large extents or long time ranges.": (
         "Vent seulement : les tirets des lignes de flux avancent dans le sens du vent. La couche est "

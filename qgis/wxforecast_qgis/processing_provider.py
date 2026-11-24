@@ -36,7 +36,7 @@ from . import indicators, temporal
 from .extent import to_bbox
 from .i18n import tr
 from .icons import icon, svg_path
-from .style import ANIMATED, RANGE, apply_flow_style, apply_style, styles_path, variable_kind
+from .style import ANIMATED, RANGE, SMOOTH, apply_flow_style, apply_style, styles_path, variable_kind
 
 WGS84 = QgsCoordinateReferenceSystem("EPSG:4326")
 DEFAULT_MODEL = "noaa-gfs-forecast"
@@ -171,6 +171,13 @@ class FetchForecastAlgorithm(_ForecastAlgorithm):
         self._add_forecast_parameters()
         self.addParameter(
             QgsProcessingParameterBoolean(
+                "SMOOTH",
+                tr("Smooth rasters (interpolated between grid cells, no square pixels)"),
+                True,
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterBoolean(
                 "ANIMATE_FLOW",
                 tr("Animated wind flow lines (moving dashes, redrawn continuously: may be slow)"),
                 True,
@@ -189,8 +196,9 @@ class FetchForecastAlgorithm(_ForecastAlgorithm):
         components = tuple(wxforecast.model(model).variables[forecast.variable].components)
         kind = variable_kind(forecast.variable, forecast.unit)
         animated = self.parameterAsBoolean(parameters, "ANIMATE_FLOW", context)
+        smooth = self.parameterAsBoolean(parameters, "SMOOTH", context)
         if days:
-            return _load_steps(forecasts, days, Path(path), context, (kind, components), animated)
+            return _load_steps(forecasts, days, Path(path), context, (kind, components), animated, smooth)
         path = str(wxforecast.to_geotiff(forecast, path))
         name = f"{forecast.variable} {forecast.valid_time:%Y-%m-%d %H:%M} UTC"
         results = {"OUTPUT": path}
@@ -201,7 +209,7 @@ class FetchForecastAlgorithm(_ForecastAlgorithm):
             return results
         details = context.layerToLoadOnCompletionDetails(path)
         tag = (forecast.variable, kind, components, name, forecast.unit)
-        details.setPostProcessor(_Styler(False, tag))
+        details.setPostProcessor(_Styler(False, tag, lambda layer: layer.setCustomProperty(SMOOTH, smooth)))
         details.name = name
         if "FLOW" in results:
             details.name = f"speed ({forecast.unit})" if forecast.unit else "speed"
@@ -222,7 +230,7 @@ def _hours(algorithm, parameters, name: str, context) -> timedelta | None:
 
 
 def _load_steps(
-    forecasts: list, days: int, base: Path, context, kind_components: tuple, animated: bool
+    forecasts: list, days: int, base: Path, context, kind_components: tuple, animated: bool, smooth: bool
 ) -> dict:
     """One COG per step next to `base` and one VRT stacking their first band, loaded as a single layer
     showing each band over its step's time range; wind adds one flow GeoPackage of all steps."""
@@ -251,6 +259,7 @@ def _load_steps(
 
     def setup_raster(layer):
         layer.setCustomProperty(RANGE, f"{low!r},{high!r}")
+        layer.setCustomProperty(SMOOTH, smooth)
         temporal.set_raster_steps(layer, starts, ends)
         temporal.show_in_controller(starts[0], ends[-1], frame)
 

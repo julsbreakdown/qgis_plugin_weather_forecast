@@ -250,6 +250,8 @@ assert raw_layer.customProperty("wxforecast/origin") == "raw"
 assert raw_layer.customProperty("wxforecast/kind") == "temperature"
 assert raw_layer.renderer().type() == "singlebandpseudocolor"
 assert raw_layer.source().startswith(QgsProcessingUtils.tempFolder()), "outputs in the Processing temp folder"
+assert raw_layer.resampleFilter().zoomedInResampler().type() == "cubic", "smooth by default"
+assert raw_layer.resampleFilter().zoomedOutResampler().type() == "bilinear"
 
 combo = dock.variable_combo
 entries = [
@@ -393,6 +395,14 @@ processing.runAndLoadResults(
     "wxforecast:fetchforecast",
     {"MODEL": "m", "VARIABLE": "wind_10m", "ANIMATE_FLOW": False, "OUTPUT": str(out / "still_wind.tif")},
 )
+processing.runAndLoadResults(
+    "wxforecast:fetchforecast",
+    {"MODEL": "m", "VARIABLE": "temperature_2m", "SMOOTH": False, "OUTPUT": str(out / "blocky.tif")},
+)
+blocky = next(layer for layer in project.mapLayers().values() if layer.source().endswith("blocky.tif"))
+assert blocky.resampleFilter().zoomedInResampler() is None, "Smooth off: the model's grid as squares"
+indicators.restyle(project)
+assert blocky.resampleFilter().zoomedInResampler() is None, "a restyle keeps Smooth off"
 still = next(
     layer
     for layer in project.mapLayers().values()
