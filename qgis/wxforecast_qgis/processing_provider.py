@@ -286,7 +286,7 @@ class ExportPmtilesAlgorithm(_ForecastAlgorithm):
         return "exportpmtiles"
 
     def displayName(self) -> str:
-        return "Export forecast (PMTiles, COG)"
+        return "Export forecast to PMTiles"
 
     def shortHelpString(self) -> str:
         return (
@@ -294,9 +294,7 @@ class ExportPmtilesAlgorithm(_ForecastAlgorithm):
             "(days > 0: one archive per step plus index.json in the folder, one shared value range), "
             "over an extent, polygons, or both. With 'Clip to polygons', pixels outside are transparent. "
             "The legend (min, max, colours) is in the archive metadata under 'wxforecast'. "
-            "A wind variable (e.g. wind_10m) is coloured by speed with arrows drawn where the wind blows to. "
-            "Optionally writes the same data as a Cloud Optimized GeoTIFF (days > 0: one per step in the COG "
-            "folder); skip the PMTiles output to export only the COG. Nothing is loaded in the project."
+            "A wind variable (e.g. wind_10m) is coloured by speed with arrows drawn where the wind blows to."
         )
 
     def createInstance(self):
@@ -327,29 +325,12 @@ class ExportPmtilesAlgorithm(_ForecastAlgorithm):
         self.addParameter(QgsProcessingParameterBoolean("CLIP", "Clip to polygons", True))
         self.addParameter(
             QgsProcessingParameterFileDestination(
-                "OUTPUT",
-                "PMTiles (days = 0)",
-                "PMTiles (*.pmtiles)",
-                optional=True,
-                createByDefault=True,
+                "OUTPUT", "PMTiles (days = 0)", "PMTiles (*.pmtiles)", QgsProcessing.TEMPORARY_OUTPUT
             )
         )
         self.addParameter(
             QgsProcessingParameterFolderDestination(
-                "OUTPUT_FOLDER",
-                "PMTiles folder, one per step (days > 0)",
-                optional=True,
-                createByDefault=True,
-            )
-        )
-        self.addParameter(
-            QgsProcessingParameterFileDestination(
-                "COG", "COG (days = 0)", "GeoTIFF (*.tif)", optional=True, createByDefault=False
-            )
-        )
-        self.addParameter(
-            QgsProcessingParameterFolderDestination(
-                "COG_FOLDER", "COG folder, one per step (days > 0)", optional=True, createByDefault=False
+                "OUTPUT_FOLDER", "PMTiles folder, one per step (days > 0)", QgsProcessing.TEMPORARY_OUTPUT
             )
         )
 
@@ -371,55 +352,39 @@ class ExportPmtilesAlgorithm(_ForecastAlgorithm):
                 raise QgsProcessingException("Give an extent, polygons, or both.")
             feedback.pushInfo(f"{len(areas)} area(s)")
             days = self.parameterAsInt(parameters, "DAYS", context)
-            tiles_output, cog_output = ("OUTPUT_FOLDER", "COG_FOLDER") if days else ("OUTPUT", "COG")
-            tiles_path = self.parameterAsFileOutput(parameters, tiles_output, context)
-            cog_path = self.parameterAsFileOutput(parameters, cog_output, context)
-            if not tiles_path and not cog_path:
-                raise QgsProcessingException(f"Pick at least one output: {tiles_output} or {cog_output}.")
+            output = "OUTPUT_FOLDER" if days else "OUTPUT"
+            destination = self.parameterAsFileOutput(parameters, output, context)
             min_zoom = self.parameterAsInt(parameters, "MIN_ZOOM", context)
             max_zoom = None
             if parameters.get("MAX_ZOOM") not in (None, ""):
                 max_zoom = self.parameterAsInt(parameters, "MAX_ZOOM", context)
-            if tiles_path:
-                # Max zoom empty: the grid's zoom is unknown before the fetch, so min zoom is the lower bound.
-                lowest, name = (min_zoom, "min") if max_zoom is None else (max_zoom, "max")
-                count = wxforecast.estimate_tiles(areas, min_zoom, lowest)
-                if count > MAX_TILES:
-                    raise QgsProcessingException(
-                        f"About {count} tiles exceed the limit of {MAX_TILES}, lower the {name} zoom"
-                    )
-                if max_zoom is not None:
-                    feedback.pushInfo(f"About {count} tiles per step")
-            forecasts, days = self._fetch(parameters, context, feedback, wxforecast.areas_bbox(areas))
-            results = {}
-            if cog_path:
-                if days:
-                    for forecast in forecasts:
-                        name = f"{wxforecast.step_name(forecast)}.tif"
-                        wxforecast.to_geotiff(forecast, Path(cog_path) / name)
-                else:
-                    wxforecast.to_geotiff(forecasts[0], cog_path)
-                feedback.pushInfo(f"Wrote {cog_path}")
-                results[cog_output] = cog_path
-            if tiles_path:
-                write = wxforecast.to_pmtiles_steps if days else wxforecast.to_pmtiles
-                path = write(
-                    forecasts if days else forecasts[0],
-                    tiles_path,
-                    areas,
-                    min_zoom,
-                    max_zoom,
-                    clip=self.parameterAsBool(parameters, "CLIP", context),
-                    styles=styles_path(),
-                    progress=lambda done, total: _progress(feedback, done, total),
+            # Max zoom empty: the grid's zoom is unknown before the fetch, so min zoom is the lower bound.
+            lowest, name = (min_zoom, "min") if max_zoom is None else (max_zoom, "max")
+            count = wxforecast.estimate_tiles(areas, min_zoom, lowest)
+            if count > MAX_TILES:
+                raise QgsProcessingException(
+                    f"About {count} tiles exceed the limit of {MAX_TILES}, lower the {name} zoom"
                 )
-                feedback.pushInfo(f"Wrote {path}")
-                results[tiles_output] = str(path.parent if days else path)
+            if max_zoom is not None:
+                feedback.pushInfo(f"About {count} tiles per step")
+            forecasts, days = self._fetch(parameters, context, feedback, wxforecast.areas_bbox(areas))
+            write = wxforecast.to_pmtiles_steps if days else wxforecast.to_pmtiles
+            path = write(
+                forecasts if days else forecasts[0],
+                destination,
+                areas,
+                min_zoom,
+                max_zoom,
+                clip=self.parameterAsBool(parameters, "CLIP", context),
+                styles=styles_path(),
+                progress=lambda done, total: _progress(feedback, done, total),
+            )
         except wxforecast.Cancelled:
             return {}
         except ValueError as exc:
             raise QgsProcessingException(str(exc)) from exc
-        return results
+        feedback.pushInfo(f"Wrote {path}")
+        return {output: str(path.parent if days else path)}
 
 
 def _progress(feedback, done: int, total: int) -> bool:

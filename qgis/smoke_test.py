@@ -419,29 +419,6 @@ unchecked.setInvalidGeometryCheck(QgsFeatureRequest.InvalidGeometryCheck.Geometr
 result = processing.run("wxforecast:exportpmtiles", bowtie_parameters, context=unchecked)
 print("invalid polygon, no check: made valid by the library,", Path(result["OUTPUT"]).name)
 
-
-def is_cog(path):
-    return gdal.Open(str(path)).GetMetadata("IMAGE_STRUCTURE").get("LAYOUT") == "COG"
-
-
-cog_parameters = {"MODEL": "m", "EXTENT": "-5,5,40,50 [EPSG:4326]", "MAX_ZOOM": 2}
-result = processing.run(
-    "wxforecast:exportpmtiles",
-    cog_parameters | {"OUTPUT": str(out / "both.pmtiles"), "COG": str(out / "both.tif")},
-)
-assert Path(result["OUTPUT"]).is_file() and is_cog(result["COG"]), result
-result = processing.run(
-    "wxforecast:exportpmtiles", cog_parameters | {"OUTPUT": None, "COG": str(out / "only.tif")}
-)
-assert "OUTPUT" not in result and is_cog(result["COG"]), result
-print("cog export:", sorted(result), Path(result["COG"]).name)
-fetched = len(fetches)
-try:
-    processing.run("wxforecast:exportpmtiles", cog_parameters | {"OUTPUT": None})
-    raise AssertionError("no output should be rejected")
-except QgsProcessingException as exc:
-    assert "at least one output" in str(exc) and len(fetches) == fetched, exc
-
 world = {"MODEL": "m", "EXTENT": "-180,180,-85,85 [EPSG:4326]", "OUTPUT": str(out / "big.pmtiles")}
 for zooms, expected in (
     ({"MAX_ZOOM": 12}, "exceed the limit"),
@@ -558,13 +535,10 @@ result = processing.run(
         "DAYS": 1,
         "MAX_ZOOM": 2,
         "OUTPUT_FOLDER": str(out / "pm_steps"),
-        "COG_FOLDER": str(out / "cog_steps"),
     },
 )
 index = json.loads((Path(result["OUTPUT_FOLDER"]) / "index.json").read_text())
 assert [step["lead_hours"] for step in index["steps"]] == STEP_HOURS
-cogs = sorted(Path(result["COG_FOLDER"]).glob("*.tif"))
-assert [c.stem for c in cogs] == [Path(s["file"]).stem for s in index["steps"]] and all(map(is_cog, cogs))
 print("pmtiles steps:", sorted(p.name for p in Path(result["OUTPUT_FOLDER"]).iterdir()))
 
 project.layerTreeRoot().removeAllChildren()

@@ -92,21 +92,17 @@ widgets, batch mode, the Model Builder and `qgis_process`:
   step interval (`EVERY_HOURS`) as in the panel (days > 0: one GeoTIFF per step next to the output, output `STEPS`), extent (empty: whole world), output
   GeoTIFF, loaded, styled and tagged like the panel's layers. A wind variable (`VARIABLE=wind_10m`) also writes the
   flow lines GeoPackage next to the GeoTIFF (output `FLOW`) and loads both in one group.
-- **Export forecast (PMTiles, COG)** (`wxforecast:exportpmtiles`): same forecast parameters, an extent and/or a polygon layer (with
-  "Selected features only"), min and max zoom, **Clip to polygons**, output `.pmtiles` (days ahead > 0: a
+- **Export forecast to PMTiles** (`wxforecast:exportpmtiles`): same forecast parameters, an extent and/or a
+  polygon layer (with "Selected features only"), min and max zoom, **Clip to polygons**, output `.pmtiles` (days ahead > 0: a
   folder `OUTPUT_FOLDER` of one archive per step plus `index.json`, one shared value range), coloured with the
   panel's styles file, with progress and cancel. Wind tiles have the arrows drawn in. Invalid polygons are
   stopped by Processing's own geometry check; with the check off, the library makes them valid.
   The tile count is checked before the download (max zoom empty: at the min zoom alone): above about 100 000
   the run stops at once.
-  Optional `COG` output (days ahead > 0: folder `COG_FOLDER`, one `<variable>_<YYYYMMDDTHH>.tif` per step):
-  the same data as a Cloud Optimized GeoTIFF from the same download (wind: band 2 `direction`). Each output
-  can be skipped, not both; from scripts and `qgis_process` an output is written only when given. Nothing is
-  loaded in the project.
+  Nothing is loaded in the project; for a GeoTIFF (COG) use **Fetch forecast**.
 
 ```sh
 qgis_process run wxforecast:exportpmtiles -- POLYGONS=france.gpkg MAX_ZOOM=6 OUTPUT=out/t2m.pmtiles
-qgis_process run wxforecast:exportpmtiles -- POLYGONS=france.gpkg COG=out/t2m.tif
 ```
 
 ## Smoke test
