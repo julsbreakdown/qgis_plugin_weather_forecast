@@ -5,8 +5,9 @@
 Weather forecast maps (GFS, ECMWF AIFS, DWD ICON-EU) in QGIS and Python, from the free public data of
 [dynamical.org](https://dynamical.org).
 
-- **QGIS plugin**: pick a model, a variable, and a single time or a time range; get a styled layer ready for
-  the Temporal Controller, with animated wind flow lines. See [`qgis/`](qgis/README.md).
+- **QGIS plugin**: pick a model, a variable, and a single time or a time range; get a styled layer. A time
+  range is one VRT layer (a band per step) played by the Temporal Controller. Wind comes with animated flow
+  lines. See [`qgis/`](qgis/README.md).
 - **Python library**: fetch a forecast over a bbox and write a Cloud Optimized GeoTIFF, PMTiles or wind
   flow lines (GeoPackage). No QGIS needed.
 - **Light**: no account or API key; only the data chunks covering your area are downloaded.
@@ -18,7 +19,7 @@ Weather forecast maps (GFS, ECMWF AIFS, DWD ICON-EU) in QGIS and Python, from th
 ## Supported data
 
 Read from `https://stac.dynamical.org/catalog.json` at run time; `list_models()` is the authority.
-Checked 2026-10-14. Models served (GFS, ECMWF AIFS, DWD ICON-EU), their grids, runs, leads, read costs and
+Models served (GFS, ECMWF AIFS, DWD ICON-EU), their grids, runs, leads, read costs and
 quirks, and what is skipped: [docs/data.md](docs/data.md).
 
 | variable | unit | GFS | AIFS | ICON-EU |
@@ -87,15 +88,14 @@ steps = wxforecast.fetch_range("noaa-gfs-forecast", "temperature_2m", bbox=bbox,
 wxforecast.to_pmtiles_steps(steps, "out/t2m", areas)  # one archive per step + index.json
 ```
 
-- `run=None` takes the latest run with data (a run still being written falls back to the previous one);
-  `lead=None` takes the valid time nearest now. Pass an explicit `run` in DAGs so retries read the same data.
+- `run=None` takes the latest run with data; `lead=None` the valid time nearest now. Pass `run` explicitly
+  for reproducible reads.
 - Unknown model, variable, run or lead raises `ValueError` listing what exists.
 - `fetch_range` reads the lead range in one slice: 9 steps cost about one.
-- PMTiles: 256 px PNG, Web Mercator, `max_zoom` defaults to the model's native zoom + 2 (GFS: 5),
-  limit zoom 12 and ~100 000 tiles, all steps together (`estimate_tiles(areas, min_zoom, max_zoom)` checks
-  one step before fetching), no bbox across 180. `progress(done, total)` returning False raises
-  `Cancelled`, no file left. Wind tiles add arrows; directions are never interpolated (u and v are).
-- Every output is written under a temp name and renamed: no partial files.
+- PMTiles: 256 px PNG tiles in Web Mercator. `max_zoom` defaults to the model's native zoom + 2 (GFS: 5);
+  at most zoom 12 and about 100 000 tiles per export (`estimate_tiles` checks before fetching). No bbox
+  across 180. Wind tiles have arrows. `progress(done, total)` returning False cancels.
+- Outputs are written under a temporary name then renamed: no partial files.
 
 ## Styles
 
