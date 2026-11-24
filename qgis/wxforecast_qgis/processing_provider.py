@@ -1,6 +1,5 @@
 from collections.abc import Callable
 from datetime import timedelta
-from functools import partial
 from pathlib import Path
 
 import numpy as np
@@ -254,7 +253,7 @@ def _load_steps(forecasts: list, days: int, base: Path, context, kind_components
         flow.layerTypeHint = QgsProcessingUtils.LayerHint.Vector
         flow.groupName = name
         flow.layerSortKey = details.layerSortKey + 1
-        flow.setPostProcessor(_Styler(True, tag, partial(temporal.set_flow_steps, starts=starts, ends=ends)))
+        flow.setPostProcessor(_Styler(True, tag, temporal.set_flow_steps))
         loads[results["FLOW"]] = flow
     context.setLayersToLoadOnCompletion(loads)
     return results

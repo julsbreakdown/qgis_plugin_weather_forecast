@@ -307,7 +307,13 @@ def test_flow_lines_geopackage_types_even_without_lines(tmp_path):
             data = ogr.Open(str(path))
             layer = data.GetLayerByName("flow")
             fields = [(f.GetName(), f.GetTypeName()) for f in layer.schema]
-            assert fields == [("speed", "Real"), ("phase", "Real"), ("valid_time", "DateTime")]
+            assert fields == [
+                ("speed", "Real"),
+                ("phase", "Real"),
+                ("valid_time", "DateTime"),
+                ("show_from", "DateTime"),
+                ("show_until", "DateTime"),
+            ]
             assert layer.GetGeomType() == ogr.wkbLineString
             assert layer.GetSpatialRef().GetAuthorityCode(None) == "4326"
             assert (layer.GetFeatureCount() > 0) == (name == "some")
