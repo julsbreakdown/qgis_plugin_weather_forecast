@@ -1,4 +1,7 @@
-.PHONY: test lint smoke zip release
+.PHONY: test lint smoke zip install release
+
+VERSION := $(shell sed -n 's/^version=//p' qgis/wxforecast_qgis/metadata.txt)
+PLUGINS ?= $(HOME)/.local/share/QGIS/QGIS4/profiles/default/python/plugins
 
 test:
 	uv run pytest -m 'not network'
@@ -11,6 +14,11 @@ smoke:
 
 zip:
 	python3 qgis/build_zip.py
+
+# Replaces the installed plugin; a dev symlink is removed as a link, the checkout is untouched.
+install: zip
+	rm -rf "$(PLUGINS)/wxforecast_qgis"
+	unzip -q -o dist/wxforecast_qgis-$(VERSION).zip -d "$(PLUGINS)"
 
 # make release V=0.2.0: CI tests, builds the zip and publishes the GitHub release.
 release:
