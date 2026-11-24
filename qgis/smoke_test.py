@@ -230,6 +230,7 @@ def run_dock_fetch():
     wait(lambda: dock.job is None)
 
 
+assert dock.lead_spin.isEnabled() and not dock.every_spin.isEnabled(), "a single map greys step interval"
 dock.lead_spin.setValue(3)
 assert dock.extent_widget.outputExtent().isNull(), "an empty project defaults to the whole world"
 fetches.clear()
@@ -418,31 +419,15 @@ unchecked.setInvalidGeometryCheck(QgsFeatureRequest.InvalidGeometryCheck.Geometr
 result = processing.run("wxforecast:exportpmtiles", bowtie_parameters, context=unchecked)
 print("invalid polygon, no check: made valid by the library,", Path(result["OUTPUT"]).name)
 
-
-def is_cog(path):
-    return gdal.Open(str(path)).GetMetadata("IMAGE_STRUCTURE").get("LAYOUT") == "COG"
-
-
-cog_parameters = {"MODEL": "m", "EXTENT": "-5,5,40,50 [EPSG:4326]", "MAX_ZOOM": 2}
-result = processing.run(
-    "wxforecast:exportpmtiles",
-    cog_parameters | {"OUTPUT": str(out / "both.pmtiles"), "COG": str(out / "both.tif")},
-)
-assert Path(result["OUTPUT"]).is_file() and is_cog(result["COG"]), result
-result = processing.run(
-    "wxforecast:exportpmtiles", cog_parameters | {"OUTPUT": None, "COG": str(out / "only.tif")}
-)
-assert "OUTPUT" not in result and is_cog(result["COG"]), result
-print("cog export:", sorted(result), Path(result["COG"]).name)
-fetched = len(fetches)
-try:
-    processing.run("wxforecast:exportpmtiles", cog_parameters | {"OUTPUT": None})
-    raise AssertionError("no output should be rejected")
-except QgsProcessingException as exc:
-    assert "at least one output" in str(exc) and len(fetches) == fetched, exc
-
 world = {"MODEL": "m", "EXTENT": "-180,180,-85,85 [EPSG:4326]", "OUTPUT": str(out / "big.pmtiles")}
-for zooms, expected in (({"MAX_ZOOM": 12}, "exceed the limit"), ({"MIN_ZOOM": 5, "MAX_ZOOM": 3}, "zoom")):
+for zooms, expected in (
+    ({"MAX_ZOOM": 12}, "exceed the limit"),
+    ({"EXTENT": "-180,180,-90,90 [EPSG:4326]", "MAX_ZOOM": 12}, "exceed the limit"),
+    ({"MIN_ZOOM": 10}, "lower the min zoom"),
+    ({"MIN_ZOOM": 5, "MAX_ZOOM": 3}, "zoom"),
+    ({"DAYS": 1, "MAX_ZOOM": 2}, "set the PMTiles folder"),
+    ({"OUTPUT_FOLDER": str(out / "unused"), "MAX_ZOOM": 2}, "set the PMTiles file"),
+):
     fetched = len(fetches)
     try:
         processing.run("wxforecast:exportpmtiles", world | zooms)
@@ -553,23 +538,31 @@ result = processing.run(
         "DAYS": 1,
         "MAX_ZOOM": 2,
         "OUTPUT_FOLDER": str(out / "pm_steps"),
-        "COG_FOLDER": str(out / "cog_steps"),
     },
 )
 index = json.loads((Path(result["OUTPUT_FOLDER"]) / "index.json").read_text())
 assert [step["lead_hours"] for step in index["steps"]] == STEP_HOURS
-cogs = sorted(Path(result["COG_FOLDER"]).glob("*.tif"))
-assert [c.stem for c in cogs] == [Path(s["file"]).stem for s in index["steps"]] and all(map(is_cog, cogs))
 print("pmtiles steps:", sorted(p.name for p in Path(result["OUTPUT_FOLDER"]).iterdir()))
+try:
+    processing.run(
+        "wxforecast:exportpmtiles",
+        {"MODEL": "m", "EXTENT": world["EXTENT"], "DAYS": 1, "MAX_ZOOM": 8}
+        | {"OUTPUT_FOLDER": str(out / "big_steps")},
+    )
+    raise AssertionError("the tile limit covers all steps")
+except QgsProcessingException as exc:
+    assert f"x {len(STEP_HOURS)} steps exceed the limit" in str(exc), exc
+    assert not (out / "big_steps").exists()
 
 project.layerTreeRoot().removeAllChildren()
 combo.setCurrentIndex(combo.findData("temperature_2m"))
 dock.days_spin.setValue(1)
 dock.every_spin.setValue(3)
+assert not dock.lead_spin.isEnabled() and dock.every_spin.isEnabled(), "animation greys map time"
 run_dock_fetch()
 group, layers = step_group("temperature_2m 2026-10-12 00:00 UTC +1 d")
 assert len(layers) == len(STEP_HOURS) and all(layer.temporalProperties().isActive() for layer in layers)
-print("dock days ahead:", dock.status.text(), len(layers), "step layers")
+print("dock animation:", dock.status.text(), len(layers), "step layers")
 
 tree_indicators.unload()
 assert not view.indicators(group)

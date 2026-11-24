@@ -12,15 +12,8 @@ covering your bbox. Plain library (no QGIS, no global state, thread safe) plus a
 ## Supported data
 
 Read from `https://stac.dynamical.org/catalog.json` at run time; `list_models()` is the authority.
-Checked 2026-10-14; grids, read costs and quirks in [docs/data.md](docs/data.md).
-
-| model id | grid | runs | leads |
-|---|---|---|---|
-| `noaa-gfs-forecast` | 0.25°, global | 6 h | 0-384 h: 1 h to 120 h, then 3 h |
-| `ecmwf-aifs-single-forecast` | 0.25°, global | 6 h | 0-360 h, 6 h |
-| `dwd-icon-eu-forecast-5-day` | 0.0625°, Europe | 6 h | 0-120 h: 1 h to 78 h, then 3 h |
-
-Skipped: virtual collections, ensembles, projected grids (HRRR, HRDPS), analyses.
+Checked 2026-10-14. Models served (GFS, ECMWF AIFS, DWD ICON-EU), their grids, runs, leads, read costs and
+quirks, and what is skipped: [docs/data.md](docs/data.md).
 
 | variable | unit | GFS | AIFS | ICON-EU |
 |---|---|---|---|---|
@@ -53,7 +46,8 @@ Skipped: virtual collections, ensembles, projected grids (HRRR, HRDPS), analyses
 (2) Speed from `wind_u_<level>` and `wind_v_<level>`, plus `direction` in degrees the wind blows FROM
 (westerly = 270). Components stay fetchable.
 
-Units are as stored; legends only relabel Pa as hPa and kg m-2 s-1 as mm/h.
+°C and % stand for the stored `degree_Celsius` and `percent` ([docs/data.md](docs/data.md)). Data keep the
+stored units; legends relabel them as °C, %, hPa (from Pa) and mm/h (from kg m-2 s-1).
 
 ## Install
 
@@ -92,9 +86,9 @@ wxforecast.to_pmtiles_steps(steps, "out/t2m", areas)  # one archive per step + i
 - Unknown model, variable, run or lead raises `ValueError` listing what exists.
 - `fetch_range` reads the lead range in one slice: 9 steps cost about one.
 - PMTiles: 256 px PNG, Web Mercator, `max_zoom` defaults to the model's native zoom + 2 (GFS: 5),
-  limit zoom 12 and ~100 000 tiles (`estimate_tiles(areas, min_zoom, max_zoom)` checks before fetching),
-  no bbox across 180. `progress(done, total)` returning False raises `Cancelled`, no file left. Wind
-  tiles add arrows; directions are never interpolated (u and v are).
+  limit zoom 12 and ~100 000 tiles, all steps together (`estimate_tiles(areas, min_zoom, max_zoom)` checks
+  one step before fetching), no bbox across 180. `progress(done, total)` returning False raises
+  `Cancelled`, no file left. Wind tiles add arrows; directions are never interpolated (u and v are).
 - Every output is written under a temp name and renamed: no partial files.
 
 ## Styles

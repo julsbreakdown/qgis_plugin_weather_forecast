@@ -90,14 +90,22 @@ def native_zoom(geotransform: tuple[float, ...]) -> int:
     return min(zoom, MAX_ZOOM)
 
 
-def estimate_tiles(areas: list[str], min_zoom: int = 0, max_zoom: int = MAX_ZOOM) -> int:
+def estimate_tiles(
+    areas: list[str],
+    min_zoom: int = 0,
+    max_zoom: int = MAX_ZOOM,
+    steps: int = 1,
+    hint: str = "lower the max zoom",
+) -> int:
     """At most how many tiles `to_pmtiles` would draw over the areas (from their envelopes), without a
-    forecast; ValueError on bad zooms or areas."""
+    forecast; ValueError on bad zooms or areas, or when that count x `steps` exceeds MAX_TILES."""
     from osgeo import ogr
 
     _check_zooms(min_zoom, max_zoom)
     with ogr.ExceptionMgr(useExceptions=True):
-        return _estimate(_shape(areas), min_zoom, max_zoom)
+        count = _estimate(*_envelopes(_shape(areas)), min_zoom, max_zoom)
+    _check_tiles(count, steps, hint)
+    return count
 
 
 def to_pmtiles(
@@ -136,11 +144,8 @@ def to_pmtiles(
         osr.ExceptionMgr(useExceptions=True),
     ):
         shape = _shape(areas)
-        bounds = shape.GetEnvelope()
-        parts = [part.GetEnvelope() for part in _polygons(shape)]
-        estimate = _estimate(shape, min_zoom, max_zoom)
-        if estimate > MAX_TILES:
-            raise ValueError(f"about {estimate} tiles exceed the limit of {MAX_TILES}, lower the max zoom")
+        bounds, parts = _envelopes(shape)
+        _check_tiles(_estimate(bounds, parts, min_zoom, max_zoom))
         shape.Transform(osr.CoordinateTransformation(srs("EPSG:4326"), srs("EPSG:3857")))
         prepared = shape.CreatePreparedGeometry()
         plan = sorted(
@@ -183,13 +188,15 @@ def to_pmtiles_steps(
     """One archive per step, `<variable>_<YYYYMMDDTHH>.pmtiles` (see `step_name`), all coloured over one
     value range so colours compare across time, then `index.json` listing them; returns its path.
 
-    `progress(done, total)` counts the tiles of every step.
+    MAX_TILES covers all the steps together. `progress(done, total)` counts the tiles of every step.
     """
     from wxforecast.reader import step_name
 
     if not forecasts:
         raise ValueError("at least one forecast is needed")
     first = forecasts[0]
+    zoom = max(native_zoom(first.geotransform), min_zoom) if max_zoom is None else max_zoom
+    estimate_tiles(areas, min_zoom, zoom, len(forecasts), "lower the max zoom or keep fewer steps")
     kind = colors.variable_kind(first.variable, first.unit, styles)
     vmin, vmax = _limits(np.stack([f.values for f in forecasts]), kind, vmin, vmax, styles)
     folder = Path(folder)
@@ -235,12 +242,20 @@ def _shape(areas: list[str]) -> ogr.Geometry:
     return shape
 
 
-def _estimate(shape: ogr.Geometry, min_zoom: int, max_zoom: int) -> int:
-    bounds = shape.GetEnvelope()
-    parts = [part.GetEnvelope() for part in _polygons(shape)]
+def _envelopes(shape: ogr.Geometry) -> tuple[tuple[float, ...], list[tuple[float, ...]]]:
+    return shape.GetEnvelope(), [part.GetEnvelope() for part in _polygons(shape)]
+
+
+def _estimate(bounds: tuple[float, ...], parts: list[tuple[float, ...]], min_zoom: int, max_zoom: int) -> int:
     return sum(
         min(_count(z, bounds), sum(_count(z, p) for p in parts)) for z in range(min_zoom, max_zoom + 1)
     )
+
+
+def _check_tiles(count: int, steps: int = 1, hint: str = "lower the max zoom") -> None:
+    if count * steps > MAX_TILES:
+        times = f" x {steps} steps" if steps > 1 else ""
+        raise ValueError(f"about {count} tiles{times} exceed the limit of {MAX_TILES}, {hint}")
 
 
 def _limits(values: np.ndarray, kind: str, vmin, vmax, styles) -> tuple[float, float]:
