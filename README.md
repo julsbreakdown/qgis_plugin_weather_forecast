@@ -1,9 +1,15 @@
 # wxforecast
 
-Weather forecast maps from the public [dynamical.org](https://dynamical.org) Icechunk repositories, as
-Cloud Optimized GeoTIFF, PMTiles, wind flow lines and GeoServer SLD. No account, reads only the chunks
-covering your bbox. Plain library (no QGIS, no global state, thread safe) plus a QGIS plugin in
-[`qgis/`](qgis/README.md).
+[![tests](https://github.com/julsbreakdown/qgis_plugin_weather_forecast/actions/workflows/tests.yml/badge.svg)](https://github.com/julsbreakdown/qgis_plugin_weather_forecast/actions/workflows/tests.yml)
+
+Weather forecast maps (GFS, ECMWF AIFS, DWD ICON-EU) in QGIS and Python, from the free public data of
+[dynamical.org](https://dynamical.org).
+
+- **QGIS plugin**: pick a model, a variable, and a single time or a time range; get a styled layer ready for
+  the Temporal Controller, with animated wind flow lines. See [`qgis/`](qgis/README.md).
+- **Python library**: fetch a forecast over a bbox and write a Cloud Optimized GeoTIFF, PMTiles, wind flow
+  lines (GeoPackage) or a GeoServer SLD. No QGIS needed, thread safe, usable from DAGs.
+- **Light**: no account or API key; only the data chunks covering your area are downloaded.
 
 ![Animated wind flow lines in QGIS](assets/qgis_wind_flow.gif)
 
@@ -125,6 +131,9 @@ regex=[0-9]{8}T[0-9]{2},format=yyyyMMdd'T'HH
 Flow lines of several steps carry a `valid_time` field for a vector time dimension.
 
 ## Tests
+
+CI runs ruff, then pytest (offline) and the headless QGIS smoke test in the `qgis/qgis:4.2` image, on every
+push and pull request. Locally:
 
 ```sh
 uv run pytest -m 'not network'   # offline
