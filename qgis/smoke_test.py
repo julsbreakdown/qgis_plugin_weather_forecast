@@ -561,14 +561,14 @@ except QgsProcessingException as exc:
 
 project.layerTreeRoot().removeAllChildren()
 combo.setCurrentIndex(combo.findData("temperature_2m"))
-dock.animate_check.setChecked(True)
+dock.time_combo.setCurrentIndex(dock.time_combo.findData(True))
 assert dock.days_spin.suffix().strip() == "day", "one day is singular"
 dock.every_spin.setValue(3)
-assert not dock.lead_spin.isEnabled() and dock.every_spin.isEnabled(), "animation greys map time"
+assert not dock.lead_spin.isEnabled() and dock.every_spin.isEnabled(), "a time range greys map time"
 run_dock_fetch()
 (stack,) = project.mapLayersByName("temperature_2m 2026-10-12 00:00 UTC +1 d")
 assert stack.temporalProperties().isActive() and stack.bandCount() == len(STEP_HOURS)
-print("dock animation:", dock.status.text(), stack.bandCount(), "bands in one layer")
+print("dock time range:", dock.status.text(), stack.bandCount(), "bands in one layer")
 node = project.layerTreeRoot().findLayer(stack.id())
 assert view.indicators(node), "the animation layer is tagged"
 

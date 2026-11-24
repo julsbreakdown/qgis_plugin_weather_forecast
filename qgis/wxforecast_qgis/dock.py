@@ -16,7 +16,6 @@ from qgis.gui import QgsDockWidget, QgsExtentWidget, QgsFileWidget
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import (
-    QCheckBox,
     QComboBox,
     QFormLayout,
     QGroupBox,
@@ -65,14 +64,16 @@ class ForecastDock(QgsDockWidget):
         self.lead_spin.setToolTip(
             tr(
                 "Single map: hours after the latest model run. 'now' picks the forecast nearest the current "
-                "time. Greyed out when Animation is on."
+                "time. Greyed out with Time range."
             )
         )
-        self.animate_check = QCheckBox(tr("Animation"))
-        self.animate_check.setToolTip(
+        self.time_combo = QComboBox()
+        self.time_combo.addItem(tr("Single time"), False)
+        self.time_combo.addItem(tr("Time range"), True)
+        self.time_combo.setToolTip(
             tr(
-                "Off: one map. On: every forecast step from now to now + duration, as layers for the "
-                "Temporal Controller."
+                "Single time: one map. Time range: every forecast step from now to now + duration, as one "
+                "layer for the Temporal Controller."
             )
         )
         self.days_spin = QSpinBox()
@@ -84,8 +85,8 @@ class ForecastDock(QgsDockWidget):
         self.every_spin.setSuffix(" h")
         self.every_spin.setToolTip(
             tr(
-                "Animation only: keep one step every N hours (GFS is hourly to 120 h, then 3-hourly). "
-                "Greyed out when Animation is off."
+                "Time range only: keep one step every N hours (GFS is hourly to 120 h, then 3-hourly). "
+                "Greyed out with Single time."
             )
         )
         self.extent_widget = QgsExtentWidget(None, QgsExtentWidget.WidgetStyle.CondensedStyle)
@@ -114,16 +115,16 @@ class ForecastDock(QgsDockWidget):
         form = QFormLayout()
         form.addRow(tr("Model"), self.model_combo)
         form.addRow(tr("Variable"), self.variable_combo)
-        form.addRow(self.animate_check)
-        self.single_box = QGroupBox(tr("Single map"))
+        form.addRow(tr("Time"), self.time_combo)
+        self.single_box = QGroupBox(tr("Single time"))
         single_form = QFormLayout(self.single_box)
         single_form.addRow(tr("Map time"), self.lead_spin)
-        self.animation_box = QGroupBox(tr("Animation"))
-        animation_form = QFormLayout(self.animation_box)
-        animation_form.addRow(tr("Duration"), self.days_spin)
-        animation_form.addRow(tr("Step interval"), self.every_spin)
+        self.range_box = QGroupBox(tr("Time range"))
+        range_form = QFormLayout(self.range_box)
+        range_form.addRow(tr("Duration"), self.days_spin)
+        range_form.addRow(tr("Step interval"), self.every_spin)
         form.addRow(self.single_box)
-        form.addRow(self.animation_box)
+        form.addRow(self.range_box)
         form.addRow(tr("Extent"), self.extent_widget)
         form.addRow(tr("Styles"), styles_row)
         buttons = QHBoxLayout()
@@ -140,7 +141,7 @@ class ForecastDock(QgsDockWidget):
 
         self.model_combo.currentIndexChanged.connect(self._fill_variables)
         self.fetch_button.clicked.connect(self._fetch)
-        self.animate_check.toggled.connect(self._sync_time_mode)
+        self.time_combo.currentIndexChanged.connect(self._sync_time_mode)
         self.days_spin.valueChanged.connect(self._sync_days_suffix)
         self.reload_button.clicked.connect(self._reload_catalog)
         self.styles_widget.fileChanged.connect(self.reload_styles)
@@ -158,7 +159,7 @@ class ForecastDock(QgsDockWidget):
             self.model_combo,
             self.variable_combo,
             self.lead_spin,
-            self.animate_check,
+            self.time_combo,
             self.days_spin,
             self.every_spin,
         )
@@ -169,9 +170,9 @@ class ForecastDock(QgsDockWidget):
             self._sync_time_mode()
 
     def _sync_time_mode(self) -> None:
-        animated = self.animate_check.isChecked()
-        self.single_box.setEnabled(not animated)
-        self.animation_box.setEnabled(animated)
+        ranged = bool(self.time_combo.currentData())
+        self.single_box.setEnabled(not ranged)
+        self.range_box.setEnabled(ranged)
 
     def _sync_days_suffix(self, days: int) -> None:
         self.days_spin.setSuffix(tr(" day") if days == 1 else tr(" days"))
@@ -266,7 +267,7 @@ class ForecastDock(QgsDockWidget):
             "MODEL": self.model_combo.currentData(),
             "VARIABLE": variable,
             "LEAD_HOURS": None if self.lead_spin.value() < 0 else self.lead_spin.value(),
-            "DAYS": self.days_spin.value() if self.animate_check.isChecked() else 0,
+            "DAYS": self.days_spin.value() if self.time_combo.currentData() else 0,
             "EVERY_HOURS": self.every_spin.value() or None,
             "EXTENT": None,
             "OUTPUT": QgsProcessingOutputLayerDefinition(QgsProcessing.TEMPORARY_OUTPUT, project),

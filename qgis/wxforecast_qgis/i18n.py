@@ -5,20 +5,20 @@ FRENCH = {
     "{variable}: raw, read as stored": "{variable} : brute, lue telle quelle",
     "now": "maintenant",
     "Single map: hours after the latest model run. 'now' picks the forecast nearest the current time. "
-    "Greyed out when Animation is on.": "Carte unique : heures après le dernier run du modèle. "
+    "Greyed out with Time range.": "Carte unique : heures après le dernier run du modèle. "
     "« maintenant » prend la prévision la plus proche de l'heure actuelle. "
-    "Grisé quand l'animation est active.",
+    "Grisé avec Plage horaire.",
     " day": " jour",
     " days": " jours",
-    "Off: one map. On: every forecast step from now to now + duration, as layers for the "
-    "Temporal Controller.": (
-        "Désactivée : une seule carte. Activée : chaque échéance de maintenant à maintenant + durée, "
-        "en couches pour le contrôleur temporel."
+    "Single time: one map. Time range: every forecast step from now to now + duration, as one "
+    "layer for the Temporal Controller.": (
+        "Heure unique : une seule carte. Plage horaire : chaque échéance de maintenant à maintenant + "
+        "durée, en une couche pour le contrôleur temporel."
     ),
     "all steps": "toutes les échéances",
-    "Animation only: keep one step every N hours (GFS is hourly to 120 h, then 3-hourly). "
-    "Greyed out when Animation is off.": "Animation seulement : garde une échéance toutes les N heures "
-    "(GFS est horaire jusqu'à 120 h, puis tri-horaire). Grisé quand l'animation est désactivée.",
+    "Time range only: keep one step every N hours (GFS is hourly to 120 h, then 3-hourly). "
+    "Greyed out with Single time.": "Plage horaire seulement : garde une échéance toutes les N heures "
+    "(GFS est horaire jusqu'à 120 h, puis tri-horaire). Grisé avec Heure unique.",
     "Whole world": "Monde entier",
     "Fetch": "Récupérer",
     "Reload catalog": "Recharger le catalogue",
@@ -31,9 +31,10 @@ FRENCH = {
     "Model": "Modèle",
     "Variable": "Variable",
     "Map time": "Heure de la carte",
-    "Animation": "Animation",
+    "Time": "Temps",
+    "Single time": "Heure unique",
+    "Time range": "Plage horaire",
     "Duration": "Durée",
-    "Single map": "Carte unique",
     "Step interval": "Pas de temps",
     "Extent": "Emprise",
     "Styles": "Styles",
@@ -57,16 +58,16 @@ FRENCH = {
     "Fetch of {variable} failed: {error}": "Échec de la récupération de {variable} : {error}",
     "Fetched {variable}": "{variable} récupérée",
     "Model id": "Identifiant du modèle",
-    "Map time: hours after the latest run (empty: forecast nearest now; ignored with Animation)": (
+    "Map time: hours after the latest run (empty: forecast nearest now; ignored with a time range)": (
         "Heure de la carte : heures après le dernier run "
-        "(vide : prévision la plus proche de maintenant ; ignorée avec l'animation)"
+        "(vide : prévision la plus proche de maintenant ; ignorée avec une plage horaire)"
     ),
-    "Animation: days ahead (0: off, one map; else every step from now to now + days)": (
-        "Animation : jours à venir (0 : désactivée, une seule carte ; "
+    "Time range: days ahead (0: single time, one map; else every step from now to now + days)": (
+        "Plage horaire : jours à venir (0 : heure unique, une seule carte ; "
         "sinon chaque échéance de maintenant à maintenant + jours)"
     ),
-    "Step interval in hours, Animation only (empty: all steps)": (
-        "Pas de temps en heures, animation seulement (vide : toutes les échéances)"
+    "Step interval in hours, time range only (empty: all steps)": (
+        "Pas de temps en heures, plage horaire seulement (vide : toutes les échéances)"
     ),
     "Fetching {variable} from {model}, bbox {bbox}": (
         "Récupération de {variable} depuis {model}, emprise {bbox}"
@@ -78,12 +79,12 @@ FRENCH = {
     ),
     "Fetch forecast": "Récupérer une prévision",
     "Fetches one forecast map from dynamical.org into a styled GeoTIFF. No extent: whole world. "
-    "Animation (days > 0): one GeoTIFF per step and one VRT stacking them, loaded as a single "
+    "Time range (days > 0): one GeoTIFF per step and one VRT stacking them, loaded as a single "
     "layer that shows each step over its time range in the Temporal Controller. "
     "A wind variable (e.g. wind_10m) gives the speed raster, with a direction band, and a "
     "GeoPackage of animated flow lines next to it, both loaded in one group.": (
         "Récupère une carte de prévision depuis dynamical.org dans un GeoTIFF stylé. "
-        "Sans emprise : monde entier. Animation (jours > 0) : un GeoTIFF par échéance et un VRT qui les "
+        "Sans emprise : monde entier. Plage horaire (jours > 0) : un GeoTIFF par échéance et un VRT qui les "
         "empile, chargés en une seule couche qui affiche chaque échéance sur sa plage temporelle dans le "
         "contrôleur temporel. Une variable de vent (par ex. wind_10m) donne le raster de vitesse, avec une "
         "bande de direction, et à côté un GeoPackage de lignes de flux animées, chargés tous deux dans un "
@@ -113,8 +114,9 @@ FRENCH = {
     "PMTiles folder, one per step (days > 0)": "Dossier PMTiles, un fichier par échéance (jours > 0)",
     "Give an extent, polygons, or both.": "Indiquez une emprise, des polygones, ou les deux.",
     "{n} area(s)": "{n} zone(s)",
-    "Animation (days > 0) writes one PMTiles per step: set the PMTiles folder, not the file.": (
-        "L'animation (jours > 0) écrit un PMTiles par échéance : indiquez le dossier PMTiles, pas le fichier."
+    "A time range (days > 0) writes one PMTiles per step: set the PMTiles folder, not the file.": (
+        "Une plage horaire (jours > 0) écrit un PMTiles par échéance : "
+        "indiquez le dossier PMTiles, pas le fichier."
     ),
     "One map (days = 0) writes one PMTiles: set the PMTiles file, not the folder.": (
         "Une seule carte (jours = 0) écrit un seul PMTiles : indiquez le fichier PMTiles, pas le dossier."

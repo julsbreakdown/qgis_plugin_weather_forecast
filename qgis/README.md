@@ -32,11 +32,11 @@ use the same Python minor version as QGIS (3.14 here). Uninstall: delete the sym
    u/v axes, generic). A calculated variable carries a small gear badge: wind is one per level (e.g.
    **10 metre wind**), calculated from its u and v components, which are listed right after it as raw
    entries. The tooltip says `calculated from wind_u_10m, wind_v_10m` or `raw, read as stored`.
-3. **Animation** (checkbox, default off) picks which of the two boxes below it is active; the other is greyed
-   out.
-4. **Single map** box, **Map time**: `now` picks the forecast nearest the current time in the latest run;
+3. **Time**: `Single time` (default) or `Time range` picks which of the two boxes below it is active; the
+   other is greyed out.
+4. **Single time** box, **Map time**: `now` picks the forecast nearest the current time in the latest run;
    otherwise hours after the latest run (`+24 h`).
-   **Animation** box, **Duration** (1-16 days): every step of the latest run from now to now + duration, as
+   **Time range** box, **Duration** (1-16 days): every step of the latest run from now to now + duration, as
    one layer `<variable> <run> UTC +<days> d` for QGIS's Temporal Controller: a VRT stacking one GeoTIFF per
    step, band k shown over step k's valid time range (until the next step, temporal mode "fixed range per
    band"); **Step interval** keeps a step only every so many hours. All steps are styled over one value
@@ -92,14 +92,14 @@ the full traceback in the log panel, tab **Weather Forecast**.
 The plugin adds a **Weather forecast** provider to the Processing Toolbox, with QGIS's own parameter
 widgets, batch mode, the Model Builder and `qgis_process`:
 
-- **Fetch forecast**: model, variable, map time (`LEAD_HOURS`, empty: now), animation days (`DAYS`) and
-  step interval (`EVERY_HOURS`) as in the panel (animation, `DAYS` > 0: one GeoTIFF per step next to the
+- **Fetch forecast**: model, variable, map time (`LEAD_HOURS`, empty: now), time range days (`DAYS`) and
+  step interval (`EVERY_HOURS`) as in the panel (time range, `DAYS` > 0: one GeoTIFF per step next to the
   output, output `STEPS`, and `OUTPUT` becomes a `.vrt` stacking them), extent (empty: whole world),
   output GeoTIFF, loaded, styled and tagged like the panel's layers. A wind variable (`VARIABLE=wind_10m`)
   also writes the flow lines GeoPackage next to the GeoTIFF (output `FLOW`) and loads both in one group.
 - **Export forecast to PMTiles** (`wxforecast:exportpmtiles`): same forecast parameters, an extent and/or a
   polygon layer (with "Selected features only"), min and max zoom, **Clip to polygons**, output `.pmtiles`
-  (animation, `DAYS` > 0: a folder `OUTPUT_FOLDER` of one archive per step plus `index.json`, one shared
+  (time range, `DAYS` > 0: a folder `OUTPUT_FOLDER` of one archive per step plus `index.json`, one shared
   value range), coloured with the
   panel's styles file, with progress and cancel. Wind tiles have the arrows drawn in. Invalid polygons are
   stopped by Processing's own geometry check; with the check off, the library makes them valid.

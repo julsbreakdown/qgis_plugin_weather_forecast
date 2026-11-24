@@ -76,7 +76,7 @@ class _ForecastAlgorithm(QgsProcessingAlgorithm):
                 "LEAD_HOURS",
                 tr(
                     "Map time: hours after the latest run "
-                    "(empty: forecast nearest now; ignored with Animation)"
+                    "(empty: forecast nearest now; ignored with a time range)"
                 ),
                 QgsProcessingParameterNumber.Type.Integer,
                 optional=True,
@@ -87,7 +87,9 @@ class _ForecastAlgorithm(QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterNumber(
                 "DAYS",
-                tr("Animation: days ahead (0: off, one map; else every step from now to now + days)"),
+                tr(
+                    "Time range: days ahead (0: single time, one map; else every step from now to now + days)"
+                ),
                 QgsProcessingParameterNumber.Type.Integer,
                 0,
                 minValue=0,
@@ -97,7 +99,7 @@ class _ForecastAlgorithm(QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterNumber(
                 "EVERY_HOURS",
-                tr("Step interval in hours, Animation only (empty: all steps)"),
+                tr("Step interval in hours, time range only (empty: all steps)"),
                 QgsProcessingParameterNumber.Type.Integer,
                 optional=True,
                 minValue=1,
@@ -107,7 +109,7 @@ class _ForecastAlgorithm(QgsProcessingAlgorithm):
         self.addParameter(QgsProcessingParameterExtent("EXTENT", tr("Extent"), optional=True))
 
     def _fetch(self, parameters, context, feedback, bbox, days: int) -> list:
-        """The forecast steps of `days` of animation (0: one map at the map time)."""
+        """The forecast steps of `days` of time range (0: one map at the map time)."""
         model = self.parameterAsString(parameters, "MODEL", context)
         variable = self.parameterAsString(parameters, "VARIABLE", context)
         feedback.pushInfo(
@@ -156,7 +158,7 @@ class FetchForecastAlgorithm(_ForecastAlgorithm):
     def shortHelpString(self) -> str:
         return tr(
             "Fetches one forecast map from dynamical.org into a styled GeoTIFF. No extent: whole world. "
-            "Animation (days > 0): one GeoTIFF per step and one VRT stacking them, loaded as a single "
+            "Time range (days > 0): one GeoTIFF per step and one VRT stacking them, loaded as a single "
             "layer that shows each step over its time range in the Temporal Controller. "
             "A wind variable (e.g. wind_10m) gives the speed raster, with a direction band, and a "
             "GeoPackage of animated flow lines next to it, both loaded in one group."
@@ -378,7 +380,7 @@ class ExportPmtilesAlgorithm(_ForecastAlgorithm):
             if _has_path(parameters, unused):
                 raise QgsProcessingException(
                     tr(
-                        "Animation (days > 0) writes one PMTiles per step: "
+                        "A time range (days > 0) writes one PMTiles per step: "
                         "set the PMTiles folder, not the file."
                     )
                     if days
