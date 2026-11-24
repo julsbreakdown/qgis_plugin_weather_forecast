@@ -32,13 +32,14 @@ use the same Python minor version as QGIS (3.14 here). Uninstall: delete the sym
    u/v axes, generic). A calculated variable carries a small gear badge: wind is one per level (e.g.
    **10 metre wind**), calculated from its u and v components, which are listed right after it as raw
    entries. The tooltip says `calculated from wind_u_10m, wind_v_10m` or `raw, read as stored`.
-3. **Lead**: `now` picks the valid time nearest now in the latest run; otherwise hours after the latest run.
-4. **Days ahead** (default "one step"): every step of the latest run from now to now + days, each its own
+3. **Map time** (single map): `now` picks the forecast nearest the current time in the latest run; otherwise
+   hours after the latest run (`+24 h`). Greyed out when Animation is on.
+4. **Animation** (default `off`): every step of the latest run from now to now + days, each its own
    layer in one group `<variable> <run> UTC +<days> d`, ready for QGIS's Temporal Controller (each layer has
-   its valid time range, until the next step); **Every** keeps a step only every so many hours. All steps
+   its valid time range, until the next step); **Step interval** (Animation only) keeps a step only every so many hours. All steps
    are styled over one value range; wind adds one flow layer of all steps, filtered by `valid_time`. The
    Temporal Controller is set to animate the fetched range by the shortest step and its panel is shown.
-   The flow dashes keep moving while it plays. Lead is ignored when days ahead is set.
+   The flow dashes keep moving while it plays.
 5. **Extent**: QGIS's extent picker: current map canvas, a layer's extent, a bookmark, drawn on the map or
    typed, in any CRS (transformed to EPSG:4326; an extent across the antimeridian is supported). Clear it
    for **Whole world**, the default on an empty project; otherwise it starts on the current canvas.
@@ -87,8 +88,8 @@ the full traceback in the log panel, tab **Weather Forecast**.
 The plugin adds a **Weather forecast** provider to the Processing Toolbox, with QGIS's own parameter
 widgets, batch mode, the Model Builder and `qgis_process`:
 
-- **Fetch forecast**: model, variable, lead hours (empty: now), days ahead and every (hours) as in the
-  panel (days > 0: one GeoTIFF per step next to the output, output `STEPS`), extent (empty: whole world), output
+- **Fetch forecast**: model, variable, map time (`LEAD_HOURS`, empty: now), animation days (`DAYS`) and
+  step interval (`EVERY_HOURS`) as in the panel (days > 0: one GeoTIFF per step next to the output, output `STEPS`), extent (empty: whole world), output
   GeoTIFF, loaded, styled and tagged like the panel's layers. A wind variable (`VARIABLE=wind_10m`) also writes the
   flow lines GeoPackage next to the GeoTIFF (output `FLOW`) and loads both in one group.
 - **Export forecast (PMTiles, COG)** (`wxforecast:exportpmtiles`): same forecast parameters, an extent and/or a polygon layer (with

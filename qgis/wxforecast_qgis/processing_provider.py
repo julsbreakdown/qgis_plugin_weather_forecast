@@ -67,7 +67,7 @@ class _ForecastAlgorithm(QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterNumber(
                 "LEAD_HOURS",
-                "Lead time in hours after the latest run (empty: valid time nearest now)",
+                "Map time: hours after the latest run (empty: forecast nearest now; ignored with Animation)",
                 QgsProcessingParameterNumber.Type.Integer,
                 optional=True,
                 minValue=0,
@@ -77,7 +77,7 @@ class _ForecastAlgorithm(QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterNumber(
                 "DAYS",
-                "Days ahead (0: one step; else every step from now, lead ignored)",
+                "Animation: days ahead (0: off, one map; else every step from now to now + days)",
                 QgsProcessingParameterNumber.Type.Integer,
                 0,
                 minValue=0,
@@ -87,7 +87,7 @@ class _ForecastAlgorithm(QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterNumber(
                 "EVERY_HOURS",
-                "Every (hours) between kept steps (empty: all steps)",
+                "Step interval in hours, Animation only (empty: all steps)",
                 QgsProcessingParameterNumber.Type.Integer,
                 optional=True,
                 minValue=1,

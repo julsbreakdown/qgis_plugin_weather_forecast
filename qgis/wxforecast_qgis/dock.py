@@ -58,19 +58,29 @@ class ForecastDock(QgsDockWidget):
         self.lead_spin = QSpinBox()
         self.lead_spin.setRange(-1, MAX_LEAD_HOURS)
         self.lead_spin.setSpecialValueText("now")
+        self.lead_spin.setPrefix("+")
         self.lead_spin.setSuffix(" h")
         self.lead_spin.setValue(-1)
-        self.lead_spin.setToolTip("Hours after the latest run; 'now' picks the valid time nearest now")
+        self.lead_spin.setToolTip(
+            "Single map: hours after the latest model run. 'now' picks the forecast nearest the current "
+            "time. Greyed out when Animation is on."
+        )
         self.days_spin = QSpinBox()
         self.days_spin.setRange(0, MAX_DAYS)
-        self.days_spin.setSpecialValueText("one step")
-        self.days_spin.setSuffix(" d")
-        self.days_spin.setToolTip("Every step up to now + days, for the Temporal Controller; lead ignored")
+        self.days_spin.setSpecialValueText("off")
+        self.days_spin.setSuffix(" days")
+        self.days_spin.setToolTip(
+            "Off: one map. On: every forecast step from now to now + N days, as layers for the "
+            "Temporal Controller."
+        )
         self.every_spin = QSpinBox()
         self.every_spin.setRange(0, 240)
-        self.every_spin.setSpecialValueText("every step")
+        self.every_spin.setSpecialValueText("all steps")
         self.every_spin.setSuffix(" h")
-        self.every_spin.setToolTip("Keep a step once this many hours have passed since the last kept one")
+        self.every_spin.setToolTip(
+            "Animation only: keep one step every N hours (GFS is hourly to 120 h, then 3-hourly). "
+            "Greyed out when Animation is off."
+        )
         self.extent_widget = QgsExtentWidget(None, QgsExtentWidget.WidgetStyle.CondensedStyle)
         self.extent_widget.setMapCanvas(iface.mapCanvas())
         self.extent_widget.setNullValueAllowed(True, "Whole world")
@@ -97,9 +107,9 @@ class ForecastDock(QgsDockWidget):
         form = QFormLayout()
         form.addRow("Model", self.model_combo)
         form.addRow("Variable", self.variable_combo)
-        form.addRow("Lead", self.lead_spin)
-        form.addRow("Days ahead", self.days_spin)
-        form.addRow("Every", self.every_spin)
+        form.addRow("Map time", self.lead_spin)
+        form.addRow("Animation", self.days_spin)
+        form.addRow("Step interval", self.every_spin)
         form.addRow("Extent", self.extent_widget)
         form.addRow("Styles", styles_row)
         buttons = QHBoxLayout()
@@ -116,6 +126,7 @@ class ForecastDock(QgsDockWidget):
 
         self.model_combo.currentIndexChanged.connect(self._fill_variables)
         self.fetch_button.clicked.connect(self._fetch)
+        self.days_spin.valueChanged.connect(self._sync_time_mode)
         self.reload_button.clicked.connect(self._reload_catalog)
         self.styles_widget.fileChanged.connect(self.reload_styles)
         self.styles_button.clicked.connect(self.reload_styles)
@@ -132,6 +143,13 @@ class ForecastDock(QgsDockWidget):
         for widget in (*widgets, self.extent_widget):
             widget.setEnabled(ready)
         self.fetch_button.setEnabled(ready and self.job is None and self.variable_combo.count() > 0)
+        if ready:
+            self._sync_time_mode()
+
+    def _sync_time_mode(self) -> None:
+        animated = self.days_spin.value() > 0
+        self.lead_spin.setEnabled(not animated)
+        self.every_spin.setEnabled(animated)
 
     def unload(self) -> None:
         """Cancel running tasks; their completion slots die with this widget."""

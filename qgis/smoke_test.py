@@ -230,6 +230,7 @@ def run_dock_fetch():
     wait(lambda: dock.job is None)
 
 
+assert dock.lead_spin.isEnabled() and not dock.every_spin.isEnabled(), "a single map greys step interval"
 dock.lead_spin.setValue(3)
 assert dock.extent_widget.outputExtent().isNull(), "an empty project defaults to the whole world"
 fetches.clear()
@@ -566,6 +567,7 @@ project.layerTreeRoot().removeAllChildren()
 combo.setCurrentIndex(combo.findData("temperature_2m"))
 dock.days_spin.setValue(1)
 dock.every_spin.setValue(3)
+assert not dock.lead_spin.isEnabled() and dock.every_spin.isEnabled(), "animation greys map time"
 run_dock_fetch()
 group, layers = step_group("temperature_2m 2026-10-12 00:00 UTC +1 d")
 assert len(layers) == len(STEP_HOURS) and all(layer.temporalProperties().isActive() for layer in layers)
