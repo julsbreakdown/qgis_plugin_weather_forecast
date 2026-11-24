@@ -105,6 +105,7 @@ widgets, batch mode, the Model Builder and `qgis_process`:
   empty: at the min zoom alone). With `DAYS` > 0 a single step over the limit stops before the download;
   tiles per step x steps is checked after it, before any tile is drawn, as the step count comes from the run.
   A whole-world extent is tiled between the Web Mercator latitudes (±85.05°).
+  Setting the output of the other mode (`OUTPUT` with `DAYS` > 0, `OUTPUT_FOLDER` with `DAYS` = 0) is refused.
   Nothing is loaded in the project; for a GeoTIFF (COG) use **Fetch forecast**.
 
 ```sh

@@ -425,6 +425,8 @@ for zooms, expected in (
     ({"EXTENT": "-180,180,-90,90 [EPSG:4326]", "MAX_ZOOM": 12}, "exceed the limit"),
     ({"MIN_ZOOM": 10}, "lower the min zoom"),
     ({"MIN_ZOOM": 5, "MAX_ZOOM": 3}, "zoom"),
+    ({"DAYS": 1, "MAX_ZOOM": 2}, "set the PMTiles folder"),
+    ({"OUTPUT_FOLDER": str(out / "unused"), "MAX_ZOOM": 2}, "set the PMTiles file"),
 ):
     fetched = len(fetches)
     try:
@@ -544,7 +546,8 @@ print("pmtiles steps:", sorted(p.name for p in Path(result["OUTPUT_FOLDER"]).ite
 try:
     processing.run(
         "wxforecast:exportpmtiles",
-        world | {"DAYS": 1, "MAX_ZOOM": 8, "OUTPUT_FOLDER": str(out / "big_steps")},
+        {"MODEL": "m", "EXTENT": world["EXTENT"], "DAYS": 1, "MAX_ZOOM": 8}
+        | {"OUTPUT_FOLDER": str(out / "big_steps")},
     )
     raise AssertionError("the tile limit covers all steps")
 except QgsProcessingException as exc:

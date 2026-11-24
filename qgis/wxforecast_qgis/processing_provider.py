@@ -12,6 +12,7 @@ from qgis.core import (
     QgsProcessingContext,
     QgsProcessingException,
     QgsProcessingLayerPostProcessorInterface,
+    QgsProcessingOutputLayerDefinition,
     QgsProcessingOutputMultipleLayers,
     QgsProcessingOutputVectorLayer,
     QgsProcessingParameterBoolean,
@@ -25,6 +26,7 @@ from qgis.core import (
     QgsProcessingProvider,
     QgsProcessingUtils,
     QgsProject,
+    QgsProperty,
 )
 
 import wxforecast
@@ -353,7 +355,13 @@ class ExportPmtilesAlgorithm(_ForecastAlgorithm):
                 raise QgsProcessingException("Give an extent, polygons, or both.")
             feedback.pushInfo(f"{len(areas)} area(s)")
             days = self.parameterAsInt(parameters, "DAYS", context)
-            output = "OUTPUT_FOLDER" if days else "OUTPUT"
+            output, unused = ("OUTPUT_FOLDER", "OUTPUT") if days else ("OUTPUT", "OUTPUT_FOLDER")
+            if _has_path(parameters, unused):
+                raise QgsProcessingException(
+                    "Animation (days > 0) writes one PMTiles per step: set the PMTiles folder, not the file."
+                    if days
+                    else "One map (days = 0) writes one PMTiles: set the PMTiles file, not the folder."
+                )
             destination = self.parameterAsFileOutput(parameters, output, context)
             min_zoom = self.parameterAsInt(parameters, "MIN_ZOOM", context)
             max_zoom = None
@@ -388,6 +396,15 @@ class ExportPmtilesAlgorithm(_ForecastAlgorithm):
             raise QgsProcessingException(str(exc)) from exc
         feedback.pushInfo(f"Wrote {path}")
         return {output: str(path.parent if days else path)}
+
+
+def _has_path(parameters, name: str) -> bool:
+    value = parameters.get(name)
+    if isinstance(value, QgsProcessingOutputLayerDefinition):
+        value = value.sink
+    if isinstance(value, QgsProperty):
+        value = value.staticValue()
+    return value not in (None, "", QgsProcessing.TEMPORARY_OUTPUT)
 
 
 def _progress(feedback, done: int, total: int) -> bool:
