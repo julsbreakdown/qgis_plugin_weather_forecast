@@ -295,7 +295,7 @@ assert renderer.type() == "graduatedSymbol" and renderer.classAttribute() == "sp
 assert len(legend) == 7 and len({color for _, color in legend}) == 7, legend
 assert legend[0][1] == "#7fdbff" and legend[-1][1] == "#ff4136", legend
 assert [color for _, color in legend] == [c for _, _, c, _ in wxforecast.colors.flow_classes(1.0, "")]
-assert flow_animated(flow) and "@symbol_frame" in offset
+assert flow_animated(flow) and "epoch(now())" in offset and "@symbol_frame" not in offset
 assert symbol.symbolLayer(0).color().alpha() == 70
 
 
@@ -314,9 +314,10 @@ def flow_frame(frame: int) -> bytes:
     return bytes(image.constBits().asarray(image.sizeInBytes()))
 
 
-frames = [flow_frame(0), flow_frame(10), flow_frame(10)]
-assert frames[0] != frames[1] and frames[1] == frames[2], "dashes move between frames"
-print("flow animation: frames 0 and 10 differ")
+first = flow_frame(0)
+time.sleep(0.3)
+assert first != flow_frame(0), "dashes move with the clock, even on a fixed frame"
+print("flow animation: renders 0.3 s apart differ")
 
 
 def check_tags(group, label):
@@ -553,7 +554,9 @@ def temporal_frame(frame: int, hour: float) -> bytes:
     return bytes(image.constBits().asarray(image.sizeInBytes()))
 
 
-assert temporal_frame(0, 3) != temporal_frame(10, 3), "dashes still move in a fixed temporal range"
+first = temporal_frame(0, 3)
+time.sleep(0.3)
+assert first != temporal_frame(0, 3), "dashes still move in a fixed temporal range and frame"
 assert temporal_frame(0, 30) == temporal_frame(10, 30), "no line outside the steps"
 print("flow per step:", per_step, "lines; animation runs under the temporal controller")
 

@@ -127,10 +127,12 @@ def _flow_symbol(color: QColor, high: float, animated: bool) -> QgsLineSymbol:
     if not animated:
         return symbol
     period = sum(FLOW_DASH_MM)
+    # Clock, not @symbol_frame: QGIS pins @symbol_frame to the Temporal Controller frame in Animated mode.
+    frames = f"epoch(now()) * {FLOW_FPS / 1000:g}"
     dash.setDataDefinedProperty(
         QgsSymbolLayer.Property.DashPatternOffset,
         QgsProperty.fromExpression(
-            f'-("phase" / 10 * {period:g} + @symbol_frame * scale_linear("speed", 0, {high:g}, '
+            f'-("phase" / 10 * {period:g} + {frames} * scale_linear("speed", 0, {high:g}, '
             f"{0.01 * period:g}, {0.06 * period:g})) % {period:g}"
         ),
     )
@@ -161,7 +163,7 @@ def apply_flow_style(layer: QgsVectorLayer, unit: str = "") -> None:
     renderer.setSourceColorRamp(_ramp(styles()[colors.FLOW_KIND]))
     renderer.setClassificationMethod(QgsClassificationEqualInterval())
     layer.setRenderer(renderer)
-    # @symbol_frame only advances on layers that redraw on a timer; loading through Processing drops it.
+    # The dashes only move on layers that redraw on a timer; loading through Processing drops it.
     layer.setAutoRefreshInterval(1000 // FLOW_FPS)
     layer.setAutoRefreshMode(Qgis.AutoRefreshMode.RedrawOnly if animated else Qgis.AutoRefreshMode.Disabled)
     layer.triggerRepaint()
