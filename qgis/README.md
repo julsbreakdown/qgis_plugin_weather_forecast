@@ -100,6 +100,7 @@ widgets, batch mode, the Model Builder and `qgis_process`:
   The limit of about 100 000 tiles covers the whole export. One map is checked before the download (max zoom
   empty: at the min zoom alone). With days ahead > 0 a single step over the limit stops before the download;
   tiles per step x steps is checked after it, before any tile is drawn, as the step count comes from the run.
+  A whole-world extent is tiled between the Web Mercator latitudes (±85.05°).
   Nothing is loaded in the project; for a GeoTIFF (COG) use **Fetch forecast**.
 
 ```sh

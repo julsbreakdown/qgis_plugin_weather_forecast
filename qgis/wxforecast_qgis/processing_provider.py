@@ -38,6 +38,7 @@ from .style import RANGE, apply_flow_style, apply_style, styles_path, variable_k
 WGS84 = QgsCoordinateReferenceSystem("EPSG:4326")
 DEFAULT_MODEL = "noaa-gfs-forecast"
 DEFAULT_VARIABLE = "temperature_2m"
+WHOLE_WORLD = (-180.0, -90.0, 180.0, 90.0)
 # Processing holds post-processors by raw pointer: keep each alive until it has run.
 _STYLERS: set["_Styler"] = set()
 
@@ -338,8 +339,8 @@ class ExportPmtilesAlgorithm(_ForecastAlgorithm):
         areas = []
         bbox = self._bbox(parameters, context)
         try:
-            if bbox:
-                areas.append(wxforecast.bbox_wkt(bbox))
+            if parameters.get("EXTENT"):
+                areas.append(wxforecast.bbox_wkt(bbox or WHOLE_WORLD))
             source = self.parameterAsSource(parameters, "POLYGONS", context)
             if source is not None:
                 transform = QgsCoordinateTransform(source.sourceCrs(), WGS84, context.transformContext())

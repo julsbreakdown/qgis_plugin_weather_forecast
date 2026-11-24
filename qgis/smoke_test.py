@@ -422,6 +422,7 @@ print("invalid polygon, no check: made valid by the library,", Path(result["OUTP
 world = {"MODEL": "m", "EXTENT": "-180,180,-85,85 [EPSG:4326]", "OUTPUT": str(out / "big.pmtiles")}
 for zooms, expected in (
     ({"MAX_ZOOM": 12}, "exceed the limit"),
+    ({"EXTENT": "-180,180,-90,90 [EPSG:4326]", "MAX_ZOOM": 12}, "exceed the limit"),
     ({"MIN_ZOOM": 10}, "lower the min zoom"),
     ({"MIN_ZOOM": 5, "MAX_ZOOM": 3}, "zoom"),
 ):
