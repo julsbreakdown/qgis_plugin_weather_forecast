@@ -78,15 +78,16 @@ FRENCH = {
     ),
     "Fetch forecast": "Récupérer une prévision",
     "Fetches one forecast map from dynamical.org into a styled GeoTIFF. No extent: whole world. "
-    "Animation (days > 0): one GeoTIFF per step in one group, each with its time range for the "
-    "Temporal Controller, all styled over one value range. "
+    "Animation (days > 0): one GeoTIFF per step and one VRT stacking them, loaded as a single "
+    "layer that shows each step over its time range in the Temporal Controller. "
     "A wind variable (e.g. wind_10m) gives the speed raster, with a direction band, and a "
     "GeoPackage of animated flow lines next to it, both loaded in one group.": (
         "Récupère une carte de prévision depuis dynamical.org dans un GeoTIFF stylé. "
-        "Sans emprise : monde entier. Animation (jours > 0) : un GeoTIFF par échéance dans un même groupe, "
-        "chacun avec sa plage temporelle pour le contrôleur temporel, tous stylés sur une même plage de "
-        "valeurs. Une variable de vent (par ex. wind_10m) donne le raster de vitesse, avec une bande de "
-        "direction, et à côté un GeoPackage de lignes de flux animées, chargés tous deux dans un même groupe."
+        "Sans emprise : monde entier. Animation (jours > 0) : un GeoTIFF par échéance et un VRT qui les "
+        "empile, chargés en une seule couche qui affiche chaque échéance sur sa plage temporelle dans le "
+        "contrôleur temporel. Une variable de vent (par ex. wind_10m) donne le raster de vitesse, avec une "
+        "bande de direction, et à côté un GeoPackage de lignes de flux animées, chargés tous deux dans un "
+        "même groupe."
     ),
     "Forecast": "Prévision",
     "Wind flow lines": "Lignes de flux du vent",
