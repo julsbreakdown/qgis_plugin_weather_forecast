@@ -98,7 +98,7 @@ class _ForecastAlgorithm(QgsProcessingAlgorithm):
         self.addParameter(QgsProcessingParameterExtent("EXTENT", "Extent", optional=True))
 
     def _fetch(self, parameters, context, feedback, bbox) -> tuple[list, int]:
-        """The forecast steps and the days asked (0: one step at the lead)."""
+        """The forecast steps and the animation days asked (0: one map at the map time)."""
         model = self.parameterAsString(parameters, "MODEL", context)
         variable = self.parameterAsString(parameters, "VARIABLE", context)
         days = self.parameterAsInt(parameters, "DAYS", context)
@@ -142,8 +142,8 @@ class FetchForecastAlgorithm(_ForecastAlgorithm):
     def shortHelpString(self) -> str:
         return (
             "Fetches one forecast map from dynamical.org into a styled GeoTIFF. No extent: whole world. "
-            "Days ahead > 0: one GeoTIFF per step in one group, each with its time range for the Temporal "
-            "Controller, all styled over one value range. "
+            "Animation (days > 0): one GeoTIFF per step in one group, each with its time range for the "
+            "Temporal Controller, all styled over one value range. "
             "A wind variable (e.g. wind_10m) gives the speed raster, with a direction band, and a "
             "GeoPackage of animated flow lines next to it, both loaded in one group."
         )

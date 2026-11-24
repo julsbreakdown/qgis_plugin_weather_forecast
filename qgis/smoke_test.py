@@ -559,7 +559,7 @@ assert not dock.lead_spin.isEnabled() and dock.every_spin.isEnabled(), "animatio
 run_dock_fetch()
 group, layers = step_group("temperature_2m 2026-10-12 00:00 UTC +1 d")
 assert len(layers) == len(STEP_HOURS) and all(layer.temporalProperties().isActive() for layer in layers)
-print("dock days ahead:", dock.status.text(), len(layers), "step layers")
+print("dock animation:", dock.status.text(), len(layers), "step layers")
 
 tree_indicators.unload()
 assert not view.indicators(group)

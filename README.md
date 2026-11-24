@@ -53,7 +53,8 @@ Skipped: virtual collections, ensembles, projected grids (HRRR, HRDPS), analyses
 (2) Speed from `wind_u_<level>` and `wind_v_<level>`, plus `direction` in degrees the wind blows FROM
 (westerly = 270). Components stay fetchable.
 
-Units are as stored; legends only relabel Pa as hPa and kg m-2 s-1 as mm/h.
+°C and % stand for the stored `degree_Celsius` and `percent` ([docs/data.md](docs/data.md)). Data keep the
+stored units; legends relabel them as °C, %, hPa (from Pa) and mm/h (from kg m-2 s-1).
 
 ## Install
 
