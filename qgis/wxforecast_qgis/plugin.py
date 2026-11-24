@@ -3,14 +3,14 @@ from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QAction
 
 from . import icons
+from .i18n import tr
 from .indicators import Indicators
-
-MENU = "&Weather Forecast"
 
 
 class WxForecastPlugin:
     def __init__(self, iface):
         self.iface = iface
+        self.menu = ""
         self.action = None
         self.dock = None
         self.provider = None
@@ -25,11 +25,12 @@ class WxForecastPlugin:
     def initGui(self) -> None:
         self.initProcessing()
         icon = icons.icon("forecast")
-        self.action = QAction(icon, "Weather forecast", self.iface.mainWindow())
+        self.menu = tr("&Weather Forecast")
+        self.action = QAction(icon, tr("Weather forecast"), self.iface.mainWindow())
         self.action.setCheckable(True)
         self.action.toggled.connect(self._toggle)
         self.iface.addToolBarIcon(self.action)
-        self.iface.addPluginToMenu(MENU, self.action)
+        self.iface.addPluginToMenu(self.menu, self.action)
         self.indicators = Indicators(self.iface.layerTreeView())
 
     def _toggle(self, checked: bool) -> None:
@@ -50,7 +51,7 @@ class WxForecastPlugin:
         if self.indicators is not None:
             self.indicators.unload()
             self.indicators = None
-        self.iface.removePluginMenu(MENU, self.action)
+        self.iface.removePluginMenu(self.menu, self.action)
         self.iface.removeToolBarIcon(self.action)
         if self.dock is not None:
             self.dock.unload()

@@ -33,6 +33,7 @@ import wxforecast
 
 from . import indicators, temporal
 from .extent import to_bbox
+from .i18n import tr
 from .icons import icon, svg_path
 from .style import RANGE, apply_flow_style, apply_style, styles_path, variable_kind
 
@@ -52,7 +53,7 @@ class WxForecastProvider(QgsProcessingProvider):
         return "wxforecast"
 
     def name(self) -> str:
-        return "Weather forecast"
+        return tr("Weather forecast")
 
     def icon(self):
         return icon("forecast")
@@ -67,12 +68,15 @@ class WxForecastProvider(QgsProcessingProvider):
 
 class _ForecastAlgorithm(QgsProcessingAlgorithm):
     def _add_forecast_parameters(self) -> None:
-        self.addParameter(QgsProcessingParameterString("MODEL", "Model id", DEFAULT_MODEL))
-        self.addParameter(QgsProcessingParameterString("VARIABLE", "Variable", DEFAULT_VARIABLE))
+        self.addParameter(QgsProcessingParameterString("MODEL", tr("Model id"), DEFAULT_MODEL))
+        self.addParameter(QgsProcessingParameterString("VARIABLE", tr("Variable"), DEFAULT_VARIABLE))
         self.addParameter(
             QgsProcessingParameterNumber(
                 "LEAD_HOURS",
-                "Map time: hours after the latest run (empty: forecast nearest now; ignored with Animation)",
+                tr(
+                    "Map time: hours after the latest run "
+                    "(empty: forecast nearest now; ignored with Animation)"
+                ),
                 QgsProcessingParameterNumber.Type.Integer,
                 optional=True,
                 minValue=0,
@@ -82,7 +86,7 @@ class _ForecastAlgorithm(QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterNumber(
                 "DAYS",
-                "Animation: days ahead (0: off, one map; else every step from now to now + days)",
+                tr("Animation: days ahead (0: off, one map; else every step from now to now + days)"),
                 QgsProcessingParameterNumber.Type.Integer,
                 0,
                 minValue=0,
@@ -92,20 +96,24 @@ class _ForecastAlgorithm(QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterNumber(
                 "EVERY_HOURS",
-                "Step interval in hours, Animation only (empty: all steps)",
+                tr("Step interval in hours, Animation only (empty: all steps)"),
                 QgsProcessingParameterNumber.Type.Integer,
                 optional=True,
                 minValue=1,
                 maxValue=MAX_EVERY_HOURS,
             )
         )
-        self.addParameter(QgsProcessingParameterExtent("EXTENT", "Extent", optional=True))
+        self.addParameter(QgsProcessingParameterExtent("EXTENT", tr("Extent"), optional=True))
 
     def _fetch(self, parameters, context, feedback, bbox, days: int) -> list:
         """The forecast steps of `days` of animation (0: one map at the map time)."""
         model = self.parameterAsString(parameters, "MODEL", context)
         variable = self.parameterAsString(parameters, "VARIABLE", context)
-        feedback.pushInfo(f"Fetching {variable} from {model}, bbox {bbox or 'whole world'}")
+        feedback.pushInfo(
+            tr("Fetching {variable} from {model}, bbox {bbox}").format(
+                variable=variable, model=model, bbox=bbox or tr("whole world")
+            )
+        )
         try:
             if days:
                 every = _hours(self, parameters, "EVERY_HOURS", context)
@@ -117,8 +125,10 @@ class _ForecastAlgorithm(QgsProcessingAlgorithm):
             raise QgsProcessingException(str(exc)) from exc
         first, last = forecasts[0], forecasts[-1]
         feedback.pushInfo(
-            f"Run {first.init_time:%Y-%m-%d %H:%M} UTC, {len(forecasts)} step(s) valid "
-            f"{first.valid_time:%Y-%m-%d %H:%M} to {last.valid_time:%Y-%m-%d %H:%M} UTC"
+            tr(
+                "Run {init:%Y-%m-%d %H:%M} UTC, {n} step(s) valid "
+                "{first:%Y-%m-%d %H:%M} to {last:%Y-%m-%d %H:%M} UTC"
+            ).format(init=first.init_time, n=len(forecasts), first=first.valid_time, last=last.valid_time)
         )
         return forecasts
 
@@ -140,10 +150,10 @@ class FetchForecastAlgorithm(_ForecastAlgorithm):
         return "fetchforecast"
 
     def displayName(self) -> str:
-        return "Fetch forecast"
+        return tr("Fetch forecast")
 
     def shortHelpString(self) -> str:
-        return (
+        return tr(
             "Fetches one forecast map from dynamical.org into a styled GeoTIFF. No extent: whole world. "
             "Animation (days > 0): one GeoTIFF per step in one group, each with its time range for the "
             "Temporal Controller, all styled over one value range. "
@@ -156,9 +166,9 @@ class FetchForecastAlgorithm(_ForecastAlgorithm):
 
     def initAlgorithm(self, config=None) -> None:
         self._add_forecast_parameters()
-        self.addParameter(QgsProcessingParameterRasterDestination("OUTPUT", "Forecast"))
-        self.addOutput(QgsProcessingOutputVectorLayer("FLOW", "Wind flow lines"))
-        self.addOutput(QgsProcessingOutputMultipleLayers("STEPS", "Forecast steps"))
+        self.addParameter(QgsProcessingParameterRasterDestination("OUTPUT", tr("Forecast")))
+        self.addOutput(QgsProcessingOutputVectorLayer("FLOW", tr("Wind flow lines")))
+        self.addOutput(QgsProcessingOutputMultipleLayers("STEPS", tr("Forecast steps")))
 
     def processAlgorithm(self, parameters, context, feedback):
         days = self.parameterAsInt(parameters, "DAYS", context)
@@ -291,10 +301,10 @@ class ExportPmtilesAlgorithm(_ForecastAlgorithm):
         return "exportpmtiles"
 
     def displayName(self) -> str:
-        return "Export forecast to PMTiles"
+        return tr("Export forecast to PMTiles")
 
     def shortHelpString(self) -> str:
-        return (
+        return tr(
             "Fetches one forecast map and writes coloured Web Mercator PNG tiles into a PMTiles archive "
             "(days > 0: one archive per step plus index.json in the folder, one shared value range), "
             "over an extent, polygons, or both. With 'Clip to polygons', pixels outside are transparent. "
@@ -309,33 +319,38 @@ class ExportPmtilesAlgorithm(_ForecastAlgorithm):
         self._add_forecast_parameters()
         self.addParameter(
             QgsProcessingParameterFeatureSource(
-                "POLYGONS", "Polygons", [QgsProcessing.SourceType.TypeVectorPolygon], optional=True
+                "POLYGONS", tr("Polygons"), [QgsProcessing.SourceType.TypeVectorPolygon], optional=True
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
-                "MIN_ZOOM", "Min zoom", QgsProcessingParameterNumber.Type.Integer, 0, minValue=0, maxValue=12
+                "MIN_ZOOM",
+                tr("Min zoom"),
+                QgsProcessingParameterNumber.Type.Integer,
+                0,
+                minValue=0,
+                maxValue=12,
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
                 "MAX_ZOOM",
-                "Max zoom (empty: from the model grid)",
+                tr("Max zoom (empty: from the model grid)"),
                 QgsProcessingParameterNumber.Type.Integer,
                 optional=True,
                 minValue=0,
                 maxValue=12,
             )
         )
-        self.addParameter(QgsProcessingParameterBoolean("CLIP", "Clip to polygons", True))
+        self.addParameter(QgsProcessingParameterBoolean("CLIP", tr("Clip to polygons"), True))
         self.addParameter(
             QgsProcessingParameterFileDestination(
-                "OUTPUT", "PMTiles (days = 0)", "PMTiles (*.pmtiles)", QgsProcessing.TEMPORARY_OUTPUT
+                "OUTPUT", tr("PMTiles (days = 0)"), "PMTiles (*.pmtiles)", QgsProcessing.TEMPORARY_OUTPUT
             )
         )
         self.addParameter(
             QgsProcessingParameterFolderDestination(
-                "OUTPUT_FOLDER", "PMTiles folder, one per step (days > 0)", QgsProcessing.TEMPORARY_OUTPUT
+                "OUTPUT_FOLDER", tr("PMTiles folder, one per step (days > 0)"), QgsProcessing.TEMPORARY_OUTPUT
             )
         )
 
@@ -354,15 +369,18 @@ class ExportPmtilesAlgorithm(_ForecastAlgorithm):
                         geometry.transform(transform)
                         areas.append(geometry.asWkt())
             if not areas:
-                raise QgsProcessingException("Give an extent, polygons, or both.")
-            feedback.pushInfo(f"{len(areas)} area(s)")
+                raise QgsProcessingException(tr("Give an extent, polygons, or both."))
+            feedback.pushInfo(tr("{n} area(s)").format(n=len(areas)))
             days = self.parameterAsInt(parameters, "DAYS", context)
             output, unused = ("OUTPUT_FOLDER", "OUTPUT") if days else ("OUTPUT", "OUTPUT_FOLDER")
             if _has_path(parameters, unused):
                 raise QgsProcessingException(
-                    "Animation (days > 0) writes one PMTiles per step: set the PMTiles folder, not the file."
+                    tr(
+                        "Animation (days > 0) writes one PMTiles per step: "
+                        "set the PMTiles folder, not the file."
+                    )
                     if days
-                    else "One map (days = 0) writes one PMTiles: set the PMTiles file, not the folder."
+                    else tr("One map (days = 0) writes one PMTiles: set the PMTiles file, not the folder.")
                 )
             destination = self.parameterAsFileOutput(parameters, output, context)
             min_zoom = self.parameterAsInt(parameters, "MIN_ZOOM", context)
@@ -373,8 +391,12 @@ class ExportPmtilesAlgorithm(_ForecastAlgorithm):
             lowest, name = (min_zoom, "min") if max_zoom is None else (max_zoom, "max")
             count = wxforecast.estimate_tiles(areas, min_zoom, lowest, hint=f"lower the {name} zoom")
             if max_zoom is not None:
-                steps_note = " per step; the limit covers all steps, checked after the fetch" if days else ""
-                feedback.pushInfo(f"About {count} tiles{steps_note}")
+                note = (
+                    tr("About {count} tiles per step; the limit covers all steps, checked after the fetch")
+                    if days
+                    else tr("About {count} tiles")
+                )
+                feedback.pushInfo(note.format(count=count))
             forecasts = self._fetch(parameters, context, feedback, wxforecast.areas_bbox(areas), days)
             write = wxforecast.to_pmtiles_steps if days else wxforecast.to_pmtiles
             path = write(
@@ -391,7 +413,7 @@ class ExportPmtilesAlgorithm(_ForecastAlgorithm):
             return {}
         except ValueError as exc:
             raise QgsProcessingException(str(exc)) from exc
-        feedback.pushInfo(f"Wrote {path}")
+        feedback.pushInfo(tr("Wrote {path}").format(path=path))
         return {output: str(path.parent if days else path)}
 
 

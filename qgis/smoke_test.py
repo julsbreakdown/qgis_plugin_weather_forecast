@@ -27,7 +27,7 @@ from qgis.core import (
     QgsSymbolLayer,
     QgsVectorLayer,
 )
-from qgis.PyQt.QtCore import QCoreApplication, QSize
+from qgis.PyQt.QtCore import QCoreApplication, QLocale, QSize
 from qgis.PyQt.QtGui import QColor
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -35,6 +35,7 @@ sys.path.append("/usr/share/qgis/python/plugins")
 
 app = QgsApplication([], False)
 app.initQgis()
+QLocale.setDefault(QLocale("en"))
 
 import processing  # noqa: E402
 import wxforecast_qgis  # noqa: E402, F401  (puts the library on sys.path)
