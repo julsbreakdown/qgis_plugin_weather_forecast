@@ -11,9 +11,8 @@ not ship. QGIS has no built-in way to install them yet
 ([QEP 202](https://github.com/qgis/QGIS-Enhancement-Proposals/issues/202)), so the plugin relies on
 [qpip](https://plugins.qgis.org/plugins/a00_qpip/), the plugin recommended there:
 
-1. Download `wxforecast_qgis-<version>.zip` from the latest
-   [CI run](https://github.com/julsbreakdown/qgis_plugin_weather_forecast/actions/workflows/tests.yml)
-   (artifact `wxforecast_qgis`).
+1. Download `wxforecast_qgis-<version>.zip` from the
+   [latest release](https://github.com/julsbreakdown/qgis_plugin_weather_forecast/releases/latest).
 2. In QGIS: Plugins > Manage and Install Plugins > Install from ZIP.
 3. QGIS offers to install qpip with it (declared in `plugin_dependencies`); accept. qpip then lists the
    missing packages and installs them with QGIS's own Python.
@@ -37,7 +36,8 @@ uv venv --system-site-packages && uv sync
 ln -sfn "$PWD/qgis/wxforecast_qgis" ~/.local/share/QGIS/QGIS4/profiles/default/python/plugins/
 ```
 
-`python3 qgis/build_zip.py` builds the zip in `dist/`, with the library bundled.
+`python3 qgis/build_zip.py` builds the zip in `dist/`, with the library bundled. Release: push a tag
+`vX.Y.Z`; once the tests pass, CI publishes a GitHub release with the zip at that version.
 
 ## Use
 
