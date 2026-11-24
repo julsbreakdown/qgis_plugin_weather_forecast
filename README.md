@@ -138,7 +138,8 @@ Flow lines of several steps carry a `valid_time` field (UTC) for a vector time d
 ## Tests
 
 CI runs ruff, then pytest (offline) and the headless QGIS smoke test in the `qgis/qgis:4.2` image, on every
-push and pull request. Locally:
+push and pull request. Locally: `make test`, `make lint`, `make smoke`, `make zip`,
+`make release V=0.2.0` (tags and pushes; CI publishes the release). Or directly:
 
 ```sh
 uv run pytest -m 'not network'   # offline
