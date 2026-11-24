@@ -58,7 +58,11 @@ stored units; legends relabel them as °C, %, hPa (from Pa) and mm/h (from kg m-
 
 ## Install
 
-Python 3.12+, [uv](https://docs.astral.sh/uv/), system GDAL (`osgeo.gdal`, only for writing files).
+QGIS plugin: see [qgis/README.md](qgis/README.md#install) (a zip, plus three Python packages installed
+by qpip).
+
+Library: Python 3.12+, [uv](https://docs.astral.sh/uv/), system GDAL (`osgeo.gdal`, only for writing
+files).
 
 ```sh
 uv venv --system-site-packages && uv sync
