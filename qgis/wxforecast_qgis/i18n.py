@@ -1,4 +1,9 @@
 FRENCH = {
+    "Weather Forecast needs extra Python packages: {packages}. Install them with the qpip plugin "
+    'or with pip, see <a href="{url}">the installation guide</a>.': (
+        "Weather Forecast a besoin de paquets Python supplémentaires : {packages}. Installez-les avec "
+        "l'extension qpip ou avec pip, voir <a href=\"{url}\">le guide d'installation</a>."
+    ),
     "&Weather Forecast": "&Prévisions météo",
     "Weather forecast": "Prévisions météo",
     "{variable}: calculated from {components}": "{variable} : calculée à partir de {components}",

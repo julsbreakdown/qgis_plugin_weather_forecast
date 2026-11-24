@@ -6,17 +6,38 @@ following the QGIS language.
 
 ## Install
 
-From the project root, create the library venv once (it sees the system GDAL and numpy), then link the
-plugin into your QGIS profile and enable **Weather Forecast** in Plugins > Manage and Install Plugins:
+**Before using it, the plugin needs extra Python packages** (`icechunk`, `zarr`, `pmtiles`) that QGIS does
+not ship. QGIS has no built-in way to install them yet
+([QEP 202](https://github.com/qgis/QGIS-Enhancement-Proposals/issues/202)), so the plugin relies on
+[qpip](https://plugins.qgis.org/plugins/a00_qpip/), the plugin recommended there:
+
+1. Download `wxforecast_qgis-<version>.zip` from the latest
+   [CI run](https://github.com/julsbreakdown/qgis_plugin_weather_forecast/actions/workflows/tests.yml)
+   (artifact `wxforecast_qgis`).
+2. In QGIS: Plugins > Manage and Install Plugins > Install from ZIP.
+3. QGIS offers to install qpip with it (declared in `plugin_dependencies`); accept. qpip then lists the
+   missing packages and installs them with QGIS's own Python.
+
+Without qpip, install them yourself with the Python QGIS uses, then restart QGIS:
+
+- Windows: in the **OSGeo4W Shell** (see the
+  [PyQGIS documentation](https://docs.qgis.org/latest/en/docs/pyqgis_developer_cookbook/plugins/plugins.html)),
+  `python -m pip install icechunk zarr pmtiles`
+- Linux: `python3 -m pip install --user --break-system-packages icechunk zarr pmtiles` (Debian and Ubuntu
+  mark the system Python as externally managed; the flag only allows the `--user` install)
+- macOS: `/Applications/QGIS.app/Contents/MacOS/bin/python3 -m pip install --user icechunk zarr pmtiles`
+  (adjust the app name, e.g. `QGIS-LTR.app`)
+
+Until they are installed, the plugin only shows a message saying what is missing.
+
+Development: link the checkout instead; the plugin then uses the project venv and `src/`:
 
 ```sh
 uv venv --system-site-packages && uv sync
 ln -sfn "$PWD/qgis/wxforecast_qgis" ~/.local/share/QGIS/QGIS4/profiles/default/python/plugins/
 ```
 
-Replace `default` with your profile (Settings > User Profiles). The venv must use the same Python minor
-version as QGIS. The plugin finds the venv and `src/` through the symlink; for another layout, list the
-paths, separated by `:`, in `WXFORECAST_SITE_PACKAGES`. Uninstall: delete the symlink.
+`python3 qgis/build_zip.py` builds the zip in `dist/`, with the library bundled.
 
 ## Use
 
