@@ -92,9 +92,9 @@ wxforecast.to_pmtiles_steps(steps, "out/t2m", areas)  # one archive per step + i
 - Unknown model, variable, run or lead raises `ValueError` listing what exists.
 - `fetch_range` reads the lead range in one slice: 9 steps cost about one.
 - PMTiles: 256 px PNG, Web Mercator, `max_zoom` defaults to the model's native zoom + 2 (GFS: 5),
-  limit zoom 12 and ~100 000 tiles (`estimate_tiles(areas, min_zoom, max_zoom)` checks before fetching),
-  no bbox across 180. `progress(done, total)` returning False raises `Cancelled`, no file left. Wind
-  tiles add arrows; directions are never interpolated (u and v are).
+  limit zoom 12 and ~100 000 tiles, all steps together (`estimate_tiles(areas, min_zoom, max_zoom)` checks
+  one step before fetching), no bbox across 180. `progress(done, total)` returning False raises
+  `Cancelled`, no file left. Wind tiles add arrows; directions are never interpolated (u and v are).
 - Every output is written under a temp name and renamed: no partial files.
 
 ## Styles

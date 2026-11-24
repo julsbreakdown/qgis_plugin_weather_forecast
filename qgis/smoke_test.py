@@ -540,6 +540,15 @@ result = processing.run(
 index = json.loads((Path(result["OUTPUT_FOLDER"]) / "index.json").read_text())
 assert [step["lead_hours"] for step in index["steps"]] == STEP_HOURS
 print("pmtiles steps:", sorted(p.name for p in Path(result["OUTPUT_FOLDER"]).iterdir()))
+try:
+    processing.run(
+        "wxforecast:exportpmtiles",
+        world | {"DAYS": 1, "MAX_ZOOM": 8, "OUTPUT_FOLDER": str(out / "big_steps")},
+    )
+    raise AssertionError("the tile limit covers all steps")
+except QgsProcessingException as exc:
+    assert f"x {len(STEP_HOURS)} steps exceed the limit" in str(exc), exc
+    assert not (out / "big_steps").exists()
 
 project.layerTreeRoot().removeAllChildren()
 combo.setCurrentIndex(combo.findData("temperature_2m"))

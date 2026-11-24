@@ -183,13 +183,20 @@ def to_pmtiles_steps(
     """One archive per step, `<variable>_<YYYYMMDDTHH>.pmtiles` (see `step_name`), all coloured over one
     value range so colours compare across time, then `index.json` listing them; returns its path.
 
-    `progress(done, total)` counts the tiles of every step.
+    MAX_TILES covers all the steps together. `progress(done, total)` counts the tiles of every step.
     """
     from wxforecast.reader import step_name
 
     if not forecasts:
         raise ValueError("at least one forecast is needed")
     first = forecasts[0]
+    zoom = max(native_zoom(first.geotransform), min_zoom) if max_zoom is None else max_zoom
+    per_step = estimate_tiles(areas, min_zoom, zoom)
+    if per_step * len(forecasts) > MAX_TILES:
+        raise ValueError(
+            f"about {per_step} tiles x {len(forecasts)} steps exceed the limit of {MAX_TILES}, "
+            "lower the max zoom or keep fewer steps"
+        )
     kind = colors.variable_kind(first.variable, first.unit, styles)
     vmin, vmax = _limits(np.stack([f.values for f in forecasts]), kind, vmin, vmax, styles)
     folder = Path(folder)

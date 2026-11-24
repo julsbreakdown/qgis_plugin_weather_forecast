@@ -112,6 +112,14 @@ def step(valid_hours: float, value: float) -> Forecast:
     )
 
 
+def test_tile_limit_covers_all_steps(tmp_path):
+    world = [bbox_wkt((-180, -85, 180, 85))]
+
+    with pytest.raises(ValueError, match="x 2 steps exceed the limit"):
+        to_pmtiles_steps([step(3, 10.0), step(6, 20.0)], tmp_path / "t2m", world, 0, 8)
+    assert not (tmp_path / "t2m").exists()
+
+
 def test_pmtiles_per_step_share_one_range_and_an_index(tmp_path):
     forecasts = [step(3, 10.0), step(6, 20.0)]
     progress = []
